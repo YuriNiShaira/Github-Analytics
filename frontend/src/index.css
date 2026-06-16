@@ -2,20 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #0d1117;
+@layer base {
+  body {
+    @apply bg-github-dark text-github-text;
+  }
 }
 
-* {
-  box-sizing: border-box;
+/* Light mode overrides */
+html:not(.dark) body {
+  @apply bg-white text-gray-900;
 }
 
+html:not(.dark) .bg-github-card {
+  @apply bg-gray-50;
+}
+
+html:not(.dark) .border-github-border {
+  @apply border-gray-200;
+}
+
+html:not(.dark) .text-github-muted {
+  @apply text-gray-500;
+}
+
+html:not(.dark) .text-github-text {
+  @apply text-gray-900;
+}
+
+/* Keep GitHub accent color consistent */
+html:not(.dark) .bg-github-accent {
+  @apply bg-blue-600;
+}
+
+html:not(.dark) .hover\\:bg-blue-600:hover {
+  @apply hover:bg-blue-700;
+}
+
+/* Custom scrollbar - dark mode */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -32,4 +55,17 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #58a6ff;
+}
+
+/* Light mode scrollbar */
+html:not(.dark) ::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+html:not(.dark) ::-webkit-scrollbar-thumb {
+  background: #c1c7cd;
+}
+
+html:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: #a0a8b0;
 }
