@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+
+# Django
+db.sqlite3
+*.log
+local_settings.py
+
+# Media uploads (user files)
+media/
+
+# Static files (collected)
+staticfiles/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Django migrations cache (optional safe ignore)
+**/migrations/__pycache__/
+
+# Testing / coverage
+htmlcov/
+.coverage
+.pytest_cache/
+*.cover
+
+# IDE / editors
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+
+# MyPy / type checking
+.mypy_cache/
+.dmypy.json

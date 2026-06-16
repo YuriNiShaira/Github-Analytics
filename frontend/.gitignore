@@ -1,0 +1,41 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+dist-ssr/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Local files
+*.local
+
+# OS files
+.DS_Store
+
+# Editors
+.vscode/
+!.vscode/extensions.json
+.idea/
+
+# TypeScript / build caches (optional but useful)
+*.tsbuildinfo
+
+# Misc IDE files
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
