@@ -249,3 +249,58 @@ class GitHubCompareView(APIView):
             return data2['username']
         else:
             return 'tie'
+        
+
+class GitHubDebugEventsView(APIView):
+    """Debug view to check user events and commit data"""
+    
+    def get(self, request, username):
+        try:
+            service = GitHubService()
+            
+            # Fetch events
+            events = service.get_user_events(username, max_pages=3)
+            
+            # Count event types
+            event_types = {}
+            for event in events:
+                event_type = event.get('type', 'Unknown')
+                event_types[event_type] = event_types.get(event_type, 0) + 1
+            
+            # Count push events and commits
+            push_events = [e for e in events if e.get('type') == 'PushEvent']
+            total_commits = sum(
+                len(e.get('payload', {}).get('commits', []))
+                for e in push_events
+            )
+            
+            # Get commit activity and timeline
+            commit_activity = service.get_commit_activity(username)
+            activity_timeline = service.get_activity_timeline(username)
+            
+            # Get repository count for context
+            repos = service.get_user_repos(username, max_pages=1)
+            
+            return Response({
+                'username': username,
+                'total_events': len(events),
+                'event_types': event_types,
+                'push_events': len(push_events),
+                'total_commits_from_events': total_commits,
+                'repository_count': len(repos) if repos else 0,
+                'commit_activity': commit_activity,
+                'activity_timeline': activity_timeline,
+                'sample_events': [
+                    {
+                        'type': e.get('type'),
+                        'created_at': e.get('created_at'),
+                        'repo': e.get('repo', {}).get('name'),
+                        'commits': len(e.get('payload', {}).get('commits', [])) if e.get('type') == 'PushEvent' else 0
+                    }
+                    for e in events[:5]  # Show first 5 events for debugging
+                ]
+            })
+            
+        except Exception as e:
+            logger.error(f"Debug error for {username}: {str(e)}")
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
