@@ -9,7 +9,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 
 const Dashboard = () => {
-  const { data, loading, error, fetchData } = useGithubData();
+  const { data, loading, error, fetchData, retry, retryCount } = useGithubData();
 
   const handleSearch = (username) => {
     fetchData(username);
@@ -42,7 +42,11 @@ const Dashboard = () => {
         )}
 
         {error && (
-          <ErrorMessage message={error} onRetry={() => handleSearch(data?.username || '')} />
+          <ErrorMessage 
+            message={error} 
+            onRetry={retry} 
+            retryCount={retryCount}
+          />
         )}
 
         {data && !loading && !error && (

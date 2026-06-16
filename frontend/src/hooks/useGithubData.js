@@ -6,6 +6,7 @@ export const useGithubData = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [username, setUsername] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
 
   const fetchData = useCallback(async (searchUsername) => {
     if (!searchUsername.trim()) {
@@ -16,22 +17,32 @@ export const useGithubData = () => {
     setLoading(true);
     setError(null);
     setUsername(searchUsername);
+    setRetryCount(0);
 
     try {
       const result = await fetchGithubUser(searchUsername.trim());
       setData(result);
+      setError(null);
     } catch (err) {
-      setError(err.message);
       setData(null);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   }, []);
 
+  const retry = useCallback(() => {
+    if (username) {
+      setRetryCount(prev => prev + 1);
+      fetchData(username);
+    }
+  }, [username, fetchData]);
+
   const clearData = useCallback(() => {
     setData(null);
     setError(null);
     setUsername('');
+    setRetryCount(0);
   }, []);
 
   return {
@@ -39,7 +50,9 @@ export const useGithubData = () => {
     loading,
     error,
     username,
+    retryCount,
     fetchData,
+    retry,
     clearData,
   };
 };
