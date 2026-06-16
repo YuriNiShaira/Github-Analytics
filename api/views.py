@@ -1,3 +1,6 @@
+import requests
+import logging
+from datetime import timezone as datetime_timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -8,7 +11,7 @@ from .models import GitHubProfile, GitHubRepository, LanguageStats
 from .serializers import GitHubProfileSerializer
 from .services.github_service import GitHubService, GitHubAPIError, RateLimitExceeded
 from .utils.rate_limit_handler import RateLimitHandler
-import logging
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +30,8 @@ class GitHubUserAnalyticsView(APIView):
         
         if not can_proceed:
             return Response({
-                'error': f'Rate limit exceeded. Please try again in {wait_seconds:.0f} seconds.'
+                'error': f'Rate limit exceeded. Please try again in {wait_seconds:.0f} seconds.',
+                'retry_after': wait_seconds
             }, status=status.HTTP_429_TOO_MANY_REQUESTS)
         
         # Try to get from cache first
@@ -49,13 +53,25 @@ class GitHubUserAnalyticsView(APIView):
                 return Response(data)
                 
         except RateLimitExceeded as e:
-            return Response({'error': str(e)}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+            return Response({
+                'error': str(e),
+                'retry_after': 60
+            }, status=status.HTTP_429_TOO_MANY_REQUESTS)
+            
         except GitHubAPIError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            if 'Not Found' in str(e) or '404' in str(e):
+                return Response({
+                    'error': f'User "{username}" not found on GitHub. Please check the username.'
+                }, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                'error': f'GitHub API error: {str(e)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
         except Exception as e:
-            logger.error(f"Unexpected error: {str(e)}")
-            return Response({'error': 'Internal server error'}, 
-                          status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error(f"Unexpected error for user {username}: {str(e)}")
+            return Response({
+                'error': 'Something went wrong. Please try again in a moment.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def _fetch_and_store_user_data(self, username):
         """Fetch GitHub data and store in database"""
@@ -129,3 +145,35 @@ class GitHubUserAnalyticsView(APIView):
         data['total_commits_estimate'] = total_commits
         
         return data
+    
+class GitHubRateLimitView(APIView):
+    """Check GitHub API rate limit status"""
+    
+    def get(self, request):
+        try:
+            # Make a request to check rate limits
+            github_service = GitHubService()
+            response = requests.get(
+                f"{github_service.base_url}/rate_limit",
+                headers=github_service.headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                core = data.get('resources', {}).get('core', {})
+                reset_timestamp = core.get('reset', 0)
+                
+                return Response({
+                    'limit': core.get('limit', 0),
+                    'remaining': core.get('remaining', 0),
+                    'reset': reset_timestamp,
+                    'reset_time': datetime.fromtimestamp(
+                        reset_timestamp,
+                        tz=datetime_timezone.utc
+                    ) if reset_timestamp else None
+                })
+            
+            return Response({'error': 'Failed to fetch rate limit'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
