@@ -21,12 +21,16 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-github-dark text-github-text transition-colors duration-300">
-      <header className="border-b border-github-border bg-github-card/50 backdrop-blur sticky top-0 z-10 transition-colors duration-300">
+    /* Light background: bg-gray-50, Dark background: bg-github-dark */
+    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-github-dark dark:text-github-text transition-colors duration-300">
+      
+      {/* Header adapts seamlessly now */}
+      <header className="border-b border-gray-200 bg-white/80 dark:border-github-border dark:bg-github-card/50 backdrop-blur sticky top-0 z-10 transition-colors duration-300">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <span className="bg-github-accent w-2 h-8 rounded-full"></span>
+            {/* Dark text for light mode, white text for dark mode */}
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <span className="bg-blue-600 dark:bg-github-accent w-2 h-8 rounded-full"></span>
               GitHub Analytics
             </h1>
             <div className="flex items-center gap-3">
@@ -37,7 +41,6 @@ const Dashboard = () => {
         </div>
       </header>
 
-      {/* Rest of the component remains the same */}
       <main className="container mx-auto px-4 py-8">
         <section className="mb-8">
           <SearchBar onSearch={handleSearch} loading={loading} />
@@ -79,10 +82,10 @@ const Dashboard = () => {
           <div className="text-center py-20">
             <div className="max-w-md mx-auto">
               <div className="text-6xl mb-6">📊</div>
-              <h2 className="text-2xl font-bold text-white mb-2">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 GitHub Analytics Dashboard
               </h2>
-              <p className="text-github-muted">
+              <p className="text-gray-500 dark:text-github-muted">
                 Enter a GitHub username above to view their coding activity,
                 language statistics, and repository insights.
               </p>

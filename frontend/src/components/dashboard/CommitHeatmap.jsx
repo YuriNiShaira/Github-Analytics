@@ -2,11 +2,14 @@ import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 const CommitHeatmap = ({ activity }) => {
+  const isDarkMode = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
+
   if (!activity || Object.values(activity).every(v => v === 0)) {
     return (
-      <div className="bg-github-card border border-github-border rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Commit Activity</h3>
-        <p className="text-github-muted text-sm">No commit data available</p>
+      /*  Updated container background, borders, and typography */
+      <div className="bg-white dark:bg-github-card border border-gray-200 dark:border-github-border rounded-lg p-6 transition-colors duration-300">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Commit Activity</h3>
+        <p className="text-gray-500 dark:text-github-muted text-sm">No commit data available</p>
       </div>
     );
   }
@@ -17,23 +20,24 @@ const CommitHeatmap = ({ activity }) => {
     fullDay: day
   }));
 
-  const maxCommits = Math.max(...data.map(d => d.commits));
-
   return (
-    <div className="bg-github-card border border-github-border rounded-lg p-6">
-      <h3 className="text-lg font-semibold text-white mb-4">Commit Activity by Day</h3>
+    /*  Updated wrapper card styling for light/dark mode */
+    <div className="bg-white dark:bg-github-card border border-gray-200 dark:border-github-border rounded-lg p-6 transition-colors duration-300">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Commit Activity by Day</h3>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data}>
-            <XAxis dataKey="day" stroke="#8b949e" fontSize={12} />
-            <YAxis stroke="#8b949e" fontSize={12} />
+            {/*  Changed stroke to a neutral slate gray that looks crisp on both white and dark backgrounds */}
+            <XAxis dataKey="day" stroke="#64748b" fontSize={12} tickLine={false} />
+            <YAxis stroke="#64748b" fontSize={12} tickLine={false} />
             <Tooltip
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   return (
-                    <div className="bg-github-card border border-github-border rounded-lg p-3">
-                      <p className="text-white text-sm">{payload[0].payload.fullDay}</p>
-                      <p className="text-github-accent text-sm">
+                    /*  Fixed the tooltip card so it doesn't stay dark/white-texted in light mode */
+                    <div className="bg-white dark:bg-github-card border border-gray-200 dark:border-github-border rounded-lg p-3 shadow-md">
+                      <p className="text-gray-900 dark:text-white text-sm font-medium">{payload[0].payload.fullDay}</p>
+                      <p className="text-blue-600 dark:text-github-accent text-sm font-semibold">
                         {payload[0].value} commits
                       </p>
                     </div>
@@ -42,9 +46,11 @@ const CommitHeatmap = ({ activity }) => {
                 return null;
               }}
             />
+            {/*  Kept a classic blue theme fill that reads beautifully across both styles */}
             <Bar
               dataKey="commits"
-              fill="#58a6ff"
+              fill="#2563eb" 
+              className="fill-blue-600 dark:fill-github-accent" 
               radius={[4, 4, 0, 0]}
             />
           </BarChart>

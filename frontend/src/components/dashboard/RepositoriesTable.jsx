@@ -16,7 +16,6 @@ const RepositoriesTable = ({ repositories }) => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Get unique languages from repositories
   const languages = useMemo(() => {
     const langs = new Set();
     repositories.forEach(repo => {
@@ -27,11 +26,9 @@ const RepositoriesTable = ({ repositories }) => {
     return ['all', ...Array.from(langs).sort()];
   }, [repositories]);
 
-  // Filter and sort repositories
   const filteredRepos = useMemo(() => {
     let filtered = [...repositories];
 
-    // Search filter
     if (searchTerm) {
       filtered = filtered.filter(repo =>
         repo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -39,12 +36,10 @@ const RepositoriesTable = ({ repositories }) => {
       );
     }
 
-    // Language filter
     if (selectedLanguage !== 'all') {
       filtered = filtered.filter(repo => repo.language === selectedLanguage);
     }
 
-    // Sorting
     filtered.sort((a, b) => {
       let aVal, bVal;
       switch (sortBy) {
@@ -81,9 +76,9 @@ const RepositoriesTable = ({ repositories }) => {
 
   if (!repositories || repositories.length === 0) {
     return (
-      <div className="bg-github-card border border-github-border rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Repositories</h3>
-        <p className="text-github-muted text-sm">No repositories found</p>
+      <div className="bg-white dark:bg-github-card border border-gray-200 dark:border-github-border rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Repositories</h3>
+        <p className="text-gray-500 dark:text-github-muted text-sm">No repositories found</p>
       </div>
     );
   }
@@ -105,45 +100,42 @@ const RepositoriesTable = ({ repositories }) => {
   };
 
   return (
-    <div className="bg-github-card border border-github-border rounded-lg overflow-hidden">
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-github-border">
+    <div className="bg-white dark:bg-github-card border border-gray-200 dark:border-github-border rounded-lg overflow-hidden transition-colors duration-300">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-github-border">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-white">Repositories</h3>
-            <p className="text-github-muted text-sm">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Repositories</h3>
+            <p className="text-gray-500 dark:text-github-muted text-sm">
               {filteredRepos.length} of {repositories.length} repositories
             </p>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-2">
-            {/* Search */}
             <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-4 w-4 text-github-muted" />
+              <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400 dark:text-github-muted" />
               <input
                 type="text"
                 placeholder="Search repositories..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 pr-3 py-1.5 bg-github-dark border border-github-border rounded-md text-github-text text-sm placeholder-github-muted focus:outline-none focus:border-github-accent w-full sm:w-48 md:w-64"
+                className="pl-9 pr-8 py-1.5 bg-gray-50 dark:bg-github-dark border border-gray-300 dark:border-github-border rounded-md text-gray-900 dark:text-github-text text-sm placeholder-gray-400 dark:placeholder-github-muted focus:outline-none focus:border-blue-600 dark:focus:border-github-accent w-full sm:w-48 md:w-64"
               />
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="absolute right-2 top-2 text-github-muted hover:text-white"
+                  className="absolute right-2 top-2 text-gray-400 dark:text-github-muted hover:text-gray-600 dark:hover:text-white"
                 >
                   <XMarkIcon className="h-4 w-4" />
                 </button>
               )}
             </div>
 
-            {/* Filter toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-sm transition-colors ${
                 showFilters || selectedLanguage !== 'all'
-                  ? 'bg-github-accent text-white'
-                  : 'bg-github-dark text-github-text hover:bg-github-border'
+                  ? 'bg-blue-600 dark:bg-github-accent text-white'
+                  : 'bg-gray-100 dark:bg-github-dark text-gray-700 dark:text-github-text hover:bg-gray-200 dark:hover:bg-github-border'
               }`}
             >
               <FunnelIcon className="h-4 w-4" />
@@ -155,11 +147,10 @@ const RepositoriesTable = ({ repositories }) => {
               )}
             </button>
 
-            {/* Clear filters */}
             {(searchTerm || selectedLanguage !== 'all') && (
               <button
                 onClick={clearFilters}
-                className="px-3 py-1.5 text-sm text-github-muted hover:text-white transition-colors"
+                className="px-3 py-1.5 text-sm text-gray-500 dark:text-github-muted hover:text-gray-700 dark:hover:text-white transition-colors"
               >
                 Clear
               </button>
@@ -167,16 +158,15 @@ const RepositoriesTable = ({ repositories }) => {
           </div>
         </div>
 
-        {/* Filters panel */}
         {showFilters && (
-          <div className="mt-4 pt-4 border-t border-github-border">
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-github-border">
             <div className="flex flex-wrap gap-4">
               <div>
-                <label className="block text-xs text-github-muted mb-1">Language</label>
+                <label className="block text-xs text-gray-500 dark:text-github-muted mb-1">Language</label>
                 <select
                   value={selectedLanguage}
                   onChange={(e) => setSelectedLanguage(e.target.value)}
-                  className="bg-github-dark border border-github-border rounded-md px-3 py-1.5 text-github-text text-sm focus:outline-none focus:border-github-accent"
+                  className="bg-gray-50 dark:bg-github-dark border border-gray-300 dark:border-github-border rounded-md px-3 py-1.5 text-gray-900 dark:text-github-text text-sm focus:outline-none focus:border-blue-600 dark:focus:border-github-accent"
                 >
                   {languages.map(lang => (
                     <option key={lang} value={lang}>
@@ -190,13 +180,12 @@ const RepositoriesTable = ({ repositories }) => {
         )}
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-github-dark border-b border-github-border">
+          <thead className="bg-gray-50 dark:bg-github-dark border-b border-gray-200 dark:border-github-border">
             <tr>
               <th
-                className="px-6 py-3 text-left text-xs font-medium text-github-muted uppercase tracking-wider cursor-pointer hover:text-white"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-github-muted uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-white"
                 onClick={() => handleSort('name')}
               >
                 Repository
@@ -205,7 +194,7 @@ const RepositoriesTable = ({ repositories }) => {
                 )}
               </th>
               <th
-                className="px-6 py-3 text-left text-xs font-medium text-github-muted uppercase tracking-wider cursor-pointer hover:text-white"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-github-muted uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-white"
                 onClick={() => handleSort('stars')}
               >
                 <div className="flex items-center gap-1">
@@ -217,7 +206,7 @@ const RepositoriesTable = ({ repositories }) => {
                 </div>
               </th>
               <th
-                className="px-6 py-3 text-left text-xs font-medium text-github-muted uppercase tracking-wider cursor-pointer hover:text-white"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-github-muted uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-white"
                 onClick={() => handleSort('forks')}
               >
                 <div className="flex items-center gap-1">
@@ -228,11 +217,11 @@ const RepositoriesTable = ({ repositories }) => {
                   )}
                 </div>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-github-muted uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-github-muted uppercase tracking-wider">
                 Language
               </th>
               <th
-                className="px-6 py-3 text-left text-xs font-medium text-github-muted uppercase tracking-wider cursor-pointer hover:text-white"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-github-muted uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-white"
                 onClick={() => handleSort('updated')}
               >
                 Updated
@@ -242,29 +231,29 @@ const RepositoriesTable = ({ repositories }) => {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-github-border">
+          <tbody className="divide-y divide-gray-200 dark:divide-github-border">
             {filteredRepos.slice(0, 10).map((repo) => (
-              <tr key={repo.name} className="hover:bg-github-dark/50 transition-colors">
+              <tr key={repo.name} className="hover:bg-gray-50/50 dark:hover:bg-github-dark/50 transition-colors">
                 <td className="px-6 py-4">
                   <a
                     href={repo.html_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-github-accent hover:underline font-medium flex items-center gap-1"
+                    className="text-blue-600 dark:text-github-accent hover:underline font-medium flex items-center gap-1"
                   >
                     {repo.name}
                     <ArrowTopRightOnSquareIcon className="h-3 w-3" />
                   </a>
                   {repo.description && (
-                    <p className="text-github-muted text-sm truncate max-w-md">
+                    <p className="text-gray-500 dark:text-github-muted text-sm truncate max-w-md">
                       {repo.description}
                     </p>
                   )}
                 </td>
-                <td className="px-6 py-4 text-white">
+                <td className="px-6 py-4 text-gray-900 dark:text-white">
                   {formatNumber(repo.stargazers_count)}
                 </td>
-                <td className="px-6 py-4 text-white">
+                <td className="px-6 py-4 text-gray-900 dark:text-white">
                   {formatNumber(repo.forks_count)}
                 </td>
                 <td className="px-6 py-4">
@@ -274,13 +263,13 @@ const RepositoriesTable = ({ repositories }) => {
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: getLanguageColor(repo.language) }}
                       />
-                      <span className="text-github-text text-sm">{repo.language}</span>
+                      <span className="text-gray-700 dark:text-github-text text-sm">{repo.language}</span>
                     </div>
                   ) : (
-                    <span className="text-github-muted text-sm">-</span>
+                    <span className="text-gray-400 dark:text-github-muted text-sm">-</span>
                   )}
                 </td>
-                <td className="px-6 py-4 text-github-muted text-sm">
+                <td className="px-6 py-4 text-gray-500 dark:text-github-muted text-sm">
                   {formatDate(repo.updated_at)}
                 </td>
               </tr>
@@ -288,12 +277,12 @@ const RepositoriesTable = ({ repositories }) => {
           </tbody>
         </table>
         {filteredRepos.length === 0 && (
-          <div className="px-6 py-8 text-center text-github-muted">
+          <div className="px-6 py-8 text-center text-gray-500 dark:text-github-muted">
             No repositories match your filters
           </div>
         )}
         {filteredRepos.length > 10 && (
-          <div className="px-6 py-3 text-center text-github-muted text-sm border-t border-github-border">
+          <div className="px-6 py-3 text-center text-gray-500 dark:text-github-muted text-sm border-t border-gray-200 dark:border-github-border">
             Showing 10 of {filteredRepos.length} repositories
           </div>
         )}

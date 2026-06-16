@@ -5,16 +5,19 @@ import { getLanguageColor } from '../../utils/formatters';
 const LanguageChart = ({ languages, totalBytes }) => {
   const [activeIndex, setActiveIndex] = useState(null);
 
+  // Safely check if we are in dark mode to adjust the pie slice outline color
+  const isDarkMode = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
+
   if (!languages || Object.keys(languages).length === 0) {
     return (
-      <div className="bg-github-card border border-github-border rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Languages</h3>
-        <p className="text-github-muted text-sm">No language data available</p>
+      /* Light/Dark classes applied to fallback view */
+      <div className="bg-white dark:bg-github-card border border-gray-200 dark:border-github-border rounded-lg p-6 transition-colors duration-300">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Languages</h3>
+        <p className="text-gray-500 dark:text-github-muted text-sm">No language data available</p>
       </div>
     );
   }
 
-  // 1. Process data and group remaining small languages into "Other" so the circle closes perfectly
   const sortedEntries = Object.entries(languages).sort((a, b) => b[1] - a[1]);
   const topLanguages = sortedEntries.slice(0, 9);
   const remainingLanguages = sortedEntries.slice(9);
@@ -39,9 +42,10 @@ const LanguageChart = ({ languages, totalBytes }) => {
       const data = payload[0].payload;
       const percentage = ((data.value / totalBytes) * 100).toFixed(1);
       return (
-        <div className="bg-github-card border border-github-border rounded-lg p-3">
-          <p className="text-white text-sm font-medium">{data.name}</p>
-          <p className="text-github-muted text-xs">
+        /* Tooltip fixed to handle theme switching gracefully */
+        <div className="bg-white dark:bg-github-card border border-gray-200 dark:border-github-border rounded-lg p-3 shadow-md">
+          <p className="text-gray-900 dark:text-white text-sm font-medium">{data.name}</p>
+          <p className="text-gray-500 dark:text-github-muted text-xs mt-0.5">
             {data.value.toLocaleString()} bytes ({percentage}%)
           </p>
         </div>
@@ -51,8 +55,9 @@ const LanguageChart = ({ languages, totalBytes }) => {
   };
 
   return (
-    <div className="bg-github-card border border-github-border rounded-lg p-6">
-      <h3 className="text-lg font-semibold text-white mb-4">Language Distribution</h3>
+    /* Updated parent wrapper styles */
+    <div className="bg-white dark:bg-github-card border border-gray-200 dark:border-github-border rounded-lg p-6 transition-colors duration-300">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Language Distribution</h3>
       
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
@@ -71,7 +76,8 @@ const LanguageChart = ({ languages, totalBytes }) => {
                 <Cell
                   key={`cell-${index}`}
                   fill={entry.color}
-                  stroke="#161b22"
+                  /* Swapped static dark ring for dynamic color dependent on theme context */
+                  stroke={isDarkMode ? "#161b22" : "#ffffff"}
                   strokeWidth={2}
                   opacity={activeIndex === null || activeIndex === index ? 1 : 0.5}
                 />
@@ -86,8 +92,9 @@ const LanguageChart = ({ languages, totalBytes }) => {
                 paddingTop: '20px',
                 fontSize: '12px',
               }}
+              /* Legend texts dynamically transition between slate-700 and github-text tokens */
               formatter={(value) => (
-                <span className="text-github-text text-xs">{value}</span>
+                <span className="text-gray-700 dark:text-github-text text-xs font-medium">{value}</span>
               )}
             />
           </PieChart>
