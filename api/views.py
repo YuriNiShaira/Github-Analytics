@@ -136,19 +136,19 @@ class GitHubUserAnalyticsView(APIView):
             }
         )
         
-        # Estimate total commits
+        # Get commit data
         total_commits = self.github_service.estimate_total_commits(username)
-        
-        # Get commit activity
         commit_activity = self.github_service.get_commit_activity(username)
+        activity_timeline = self.github_service.get_activity_timeline(username)
         
-        # Serialize and return data
+        # Attach data to profile object for serializer
+        profile._total_commits_estimate = total_commits
+        profile._commit_activity = commit_activity
+        profile._activity_timeline = activity_timeline
+        
+        # Serialize and return
         serializer = GitHubProfileSerializer(profile)
-        data = serializer.data
-        data['total_commits_estimate'] = total_commits
-        data['commit_activity'] = commit_activity  # Add commit activity to response
-        
-        return data
+        return serializer.data
 
 class GitHubRateLimitView(APIView):
     """Check GitHub API rate limit status"""
@@ -180,3 +180,72 @@ class GitHubRateLimitView(APIView):
             
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class GitHubCompareView(APIView):
+    """Compare two GitHub users side-by-side"""
+    
+    def __init__(self):
+        super().__init__()
+        self.github_service = GitHubService()
+    
+    def get(self, request, username1, username2):
+        try:
+            # Fetch both users
+            with transaction.atomic():
+                data1 = self._fetch_user_comparison_data(username1)
+                data2 = self._fetch_user_comparison_data(username2)
+                
+                # Calculate comparisons
+                comparison = {
+                    'followers_diff': data1['followers'] - data2['followers'],
+                    'stars_diff': data1['total_stars'] - data2['total_stars'],
+                    'repos_diff': data1['public_repos'] - data2['public_repos'],
+                    'forks_diff': data1['total_forks'] - data2['total_forks'],
+                    'winner': self._determine_winner(data1, data2)
+                }
+                
+                return Response({
+                    'user1': data1,
+                    'user2': data2,
+                    'comparison': comparison
+                })
+                
+        except GitHubAPIError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Comparison error: {str(e)}")
+            return Response({'error': 'Failed to compare users'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _fetch_user_comparison_data(self, username):
+        """Fetch data for comparison"""
+        profile = self.github_service.get_user_profile(username)
+        repos = self.github_service.get_user_repos(username)
+        languages = self.github_service.calculate_language_stats(repos)
+        
+        return {
+            'username': username,
+            'name': profile.get('name'),
+            'avatar_url': profile.get('avatar_url'),
+            'bio': profile.get('bio'),
+            'location': profile.get('location'),
+            'followers': profile.get('followers', 0),
+            'following': profile.get('following', 0),
+            'public_repos': profile.get('public_repos', 0),
+            'total_stars': sum(r['stargazers_count'] for r in repos),
+            'total_forks': sum(r['forks_count'] for r in repos),
+            'languages': languages,
+            'top_repos': sorted(repos, key=lambda x: x['stargazers_count'], reverse=True)[:5]
+        }
+    
+    def _determine_winner(self, data1, data2):
+        """Determine which user has more stars and followers"""
+        score1 = data1['total_stars'] + data1['followers'] * 10
+        score2 = data2['total_stars'] + data2['followers'] * 10
+        
+        if score1 > score2:
+            return data1['username']
+        elif score2 > score1:
+            return data2['username']
+        else:
+            return 'tie'

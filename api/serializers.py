@@ -18,11 +18,11 @@ class LanguageStatsSerializer(serializers.ModelSerializer):
 class GitHubProfileSerializer(serializers.ModelSerializer):
     repositories = RepositorySerializer(many=True, read_only=True)
     language_stats = LanguageStatsSerializer(read_only=True)
-    commit_activity = serializers.SerializerMethodField()
-    
     total_stars = serializers.SerializerMethodField()
     total_forks = serializers.SerializerMethodField()
     total_commits_estimate = serializers.SerializerMethodField()
+    commit_activity = serializers.SerializerMethodField()
+    activity_timeline = serializers.SerializerMethodField()
     
     class Meta:
         model = GitHubProfile
@@ -31,7 +31,7 @@ class GitHubProfileSerializer(serializers.ModelSerializer):
             'company', 'blog', 'followers', 'following', 'public_repos',
             'created_at', 'repositories', 'language_stats',
             'total_stars', 'total_forks', 'total_commits_estimate',
-            'commit_activity'
+            'commit_activity', 'activity_timeline'
         ]
     
     def get_total_stars(self, obj):
@@ -41,7 +41,13 @@ class GitHubProfileSerializer(serializers.ModelSerializer):
         return sum(repo.forks_count for repo in obj.repositories.all())
     
     def get_total_commits_estimate(self, obj):
-        return getattr(obj, 'total_commits_estimate', None)
+        # This will be set in the view
+        return getattr(obj, '_total_commits_estimate', None)
     
     def get_commit_activity(self, obj):
-        return getattr(obj, 'commit_activity', None)
+        # This will be set in the view
+        return getattr(obj, '_commit_activity', None)
+    
+    def get_activity_timeline(self, obj):
+        # This will be set in the view
+        return getattr(obj, '_activity_timeline', None)

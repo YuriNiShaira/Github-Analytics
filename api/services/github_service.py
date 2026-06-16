@@ -176,7 +176,6 @@ class GitHubService:
         except GitHubAPIError:
             return None
     
-    
     def get_commit_activity(self, username):
         """Get commit activity by day of week"""
         try:
@@ -193,11 +192,44 @@ class GitHubService:
                     commit_count = len(event['payload'].get('commits', []))
                     created_at = event.get('created_at')
                     if created_at:
-                        from datetime import datetime
                         dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
                         day_name = dt.strftime('%A')
                         commit_days[day_name] = commit_days.get(day_name, 0) + commit_count
             
             return commit_days
+        except Exception as e:
+            return None
+
+    def get_activity_timeline(self, username, days=30):
+        """Get commit activity timeline for the last N days"""
+        try:
+            events = self.get_user_events(username, max_pages=10)
+            
+            # Create a dictionary for the last N days
+            today = datetime.now()
+            timeline = {}
+            
+            for i in range(days):
+                date = today - timedelta(days=i)
+                date_key = date.strftime('%Y-%m-%d')
+                timeline[date_key] = 0
+            
+            # Count commits per day
+            for event in events:
+                if event['type'] == 'PushEvent':
+                    created_at = event.get('created_at')
+                    if created_at:
+                        dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                        date_key = dt.strftime('%Y-%m-%d')
+                        if date_key in timeline:
+                            timeline[date_key] += len(event['payload'].get('commits', []))
+            
+            # Convert to list for chart
+            result = [
+                {'date': date, 'commits': count}
+                for date, count in sorted(timeline.items())
+            ]
+            
+            return result
         except Exception as e:
             return None
