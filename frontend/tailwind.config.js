@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class', // Enable class-based dark mode
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -17,6 +18,14 @@ export default {
           green: '#2ea043',
           orange: '#f0883e',
           purple: '#bc8cff',
+        },
+        // Light mode colors
+        light: {
+          bg: '#ffffff',
+          card: '#f6f8fa',
+          border: '#d0d7de',
+          text: '#24292f',
+          muted: '#57606a',
         }
       }
     },
