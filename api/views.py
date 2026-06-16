@@ -45,12 +45,12 @@ class GitHubUserAnalyticsView(APIView):
         # Fetch fresh data from GitHub
         try:
             with transaction.atomic():
-                data = self._fetch_and_store_user_data(username)
+                result_data = self._fetch_and_store_user_data(username)
                 
                 # Cache for 1 hour
-                cache.set(cache_key, data, timeout=3600)
+                cache.set(cache_key, result_data, timeout=3600)
                 
-                return Response(data)
+                return Response(result_data)
                 
         except RateLimitExceeded as e:
             return Response({
@@ -139,19 +139,22 @@ class GitHubUserAnalyticsView(APIView):
         # Estimate total commits
         total_commits = self.github_service.estimate_total_commits(username)
         
+        # Get commit activity
+        commit_activity = self.github_service.get_commit_activity(username)
+        
         # Serialize and return data
         serializer = GitHubProfileSerializer(profile)
         data = serializer.data
         data['total_commits_estimate'] = total_commits
+        data['commit_activity'] = commit_activity  # Add commit activity to response
         
         return data
-    
+
 class GitHubRateLimitView(APIView):
     """Check GitHub API rate limit status"""
     
     def get(self, request):
         try:
-            # Make a request to check rate limits
             github_service = GitHubService()
             response = requests.get(
                 f"{github_service.base_url}/rate_limit",

@@ -175,3 +175,29 @@ class GitHubService:
             return total_commits
         except GitHubAPIError:
             return None
+    
+    
+    def get_commit_activity(self, username):
+        """Get commit activity by day of week"""
+        try:
+            events = self.get_user_events(username, max_pages=10)
+            
+            # Initialize all days with 0
+            commit_days = {
+                'Monday': 0, 'Tuesday': 0, 'Wednesday': 0,
+                'Thursday': 0, 'Friday': 0, 'Saturday': 0, 'Sunday': 0
+            }
+            
+            for event in events:
+                if event['type'] == 'PushEvent':
+                    commit_count = len(event['payload'].get('commits', []))
+                    created_at = event.get('created_at')
+                    if created_at:
+                        from datetime import datetime
+                        dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                        day_name = dt.strftime('%A')
+                        commit_days[day_name] = commit_days.get(day_name, 0) + commit_count
+            
+            return commit_days
+        except Exception as e:
+            return None

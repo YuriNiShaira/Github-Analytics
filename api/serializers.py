@@ -18,8 +18,8 @@ class LanguageStatsSerializer(serializers.ModelSerializer):
 class GitHubProfileSerializer(serializers.ModelSerializer):
     repositories = RepositorySerializer(many=True, read_only=True)
     language_stats = LanguageStatsSerializer(read_only=True)
+    commit_activity = serializers.SerializerMethodField()
     
-    # Summary stats
     total_stars = serializers.SerializerMethodField()
     total_forks = serializers.SerializerMethodField()
     total_commits_estimate = serializers.SerializerMethodField()
@@ -30,7 +30,8 @@ class GitHubProfileSerializer(serializers.ModelSerializer):
             'username', 'name', 'bio', 'avatar_url', 'location',
             'company', 'blog', 'followers', 'following', 'public_repos',
             'created_at', 'repositories', 'language_stats',
-            'total_stars', 'total_forks', 'total_commits_estimate'
+            'total_stars', 'total_forks', 'total_commits_estimate',
+            'commit_activity'
         ]
     
     def get_total_stars(self, obj):
@@ -40,6 +41,7 @@ class GitHubProfileSerializer(serializers.ModelSerializer):
         return sum(repo.forks_count for repo in obj.repositories.all())
     
     def get_total_commits_estimate(self, obj):
-        # This will be calculated by the service layer
-        # We'll implement this in the GitHub service
-        return None
+        return getattr(obj, 'total_commits_estimate', None)
+    
+    def get_commit_activity(self, obj):
+        return getattr(obj, 'commit_activity', None)
