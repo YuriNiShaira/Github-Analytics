@@ -1,72 +1,66 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useGithubData } from '../hooks/useGithubData';
 import SearchBar from '../components/SearchBar';
 import ProfileCard from '../components/dashboard/ProfileCard';
 import StatsSummary from '../components/dashboard/StatsSummary';
 import LanguageChart from '../components/dashboard/LanguageChart';
 import RepositoriesTable from '../components/dashboard/RepositoriesTable';
+import CommitHeatmap from '../components/dashboard/CommitHeatmap';
+import StarHistory from '../components/dashboard/StarHistory';
+import ExportButton from '../components/common/ExportButton';
+import ThemeToggle from '../components/common/ThemeToggle';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 
 const Dashboard = () => {
-  const { data, loading, error, fetchData, retry, retryCount } = useGithubData();
+  const { data, loading, error, fetchData } = useGithubData();
+  const dashboardRef = useRef(null);
 
   const handleSearch = (username) => {
     fetchData(username);
   };
 
   return (
-    <div className="min-h-screen bg-github-dark text-github-text">
-      {/* Header */}
-      <header className="border-b border-github-border bg-github-card/50 backdrop-blur sticky top-0 z-10">
+    <div className="min-h-screen bg-github-dark text-github-text transition-colors duration-300">
+      <header className="border-b border-github-border bg-github-card/50 backdrop-blur sticky top-0 z-10 transition-colors duration-300">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
               <span className="bg-github-accent w-2 h-8 rounded-full"></span>
               GitHub Analytics
             </h1>
+            <div className="flex items-center gap-3">
+              {data && !loading && <ExportButton targetRef={dashboardRef} />}
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Rest of the component remains the same */}
       <main className="container mx-auto px-4 py-8">
-        {/* Search Section */}
         <section className="mb-8">
           <SearchBar onSearch={handleSearch} loading={loading} />
         </section>
 
-        {/* Results Section */}
-        {loading && (
-          <LoadingSpinner message="Fetching data from GitHub..." />
-        )}
-
-        {error && (
-          <ErrorMessage 
-            message={error} 
-            onRetry={retry} 
-            retryCount={retryCount}
-          />
-        )}
+        {loading && <LoadingSpinner message="Fetching data from GitHub..." />}
+        {error && <ErrorMessage message={error} onRetry={() => handleSearch(data?.username || '')} />}
 
         {data && !loading && !error && (
-          <div className="space-y-6">
-            {/* Profile */}
-            <section>
-              <ProfileCard profile={data} />
-            </section>
+          <div ref={dashboardRef} className="space-y-6">
+            <ProfileCard profile={data} />
+            <StatsSummary stats={{
+              total_stars: data.total_stars,
+              total_forks: data.total_forks,
+              total_repos: data.public_repos,
+              total_commits_estimate: data.total_commits_estimate,
+            }} />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <CommitHeatmap activity={data.commit_activity} />
+              <StarHistory repositories={data.repositories || []} />
+            </div>
 
-            {/* Stats Summary */}
-            <section>
-              <StatsSummary stats={{
-                total_stars: data.total_stars,
-                total_forks: data.total_forks,
-                total_repos: data.public_repos,
-                total_commits_estimate: data.total_commits_estimate,
-              }} />
-            </section>
-
-            {/* Charts and Tables */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1">
                 <LanguageChart 
@@ -81,7 +75,6 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Empty State */}
         {!data && !loading && !error && (
           <div className="text-center py-20">
             <div className="max-w-md mx-auto">
