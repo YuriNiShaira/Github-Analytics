@@ -38,7 +38,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'api',
+    'graphene_django',
 ]
+
+GRAPHENE = {
+    'SCHEMA': 'backend.schema.schema'
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
