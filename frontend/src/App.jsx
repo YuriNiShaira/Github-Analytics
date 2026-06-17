@@ -1,11 +1,13 @@
 import React from 'react';
+import { ApolloProvider } from '@apollo/client';
+import client from './graphql/client';
 import Dashboard from './pages/Dashboard';
 
 function App() {
   return (
-    <div className="App">
+    <ApolloProvider client={client}>
       <Dashboard />
-    </div>
+    </ApolloProvider>
   );
 }
 
