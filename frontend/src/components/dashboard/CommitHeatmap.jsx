@@ -3,14 +3,17 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { CalendarIcon } from '@heroicons/react/24/outline';
 
 const CommitHeatmap = ({ activity }) => {
+  // Premium Glassmorphism Empty State (Null Data)
   if (!activity || typeof activity !== 'object') {
     return (
-      <div className="bg-white dark:bg-github-card border border-gray-200 dark:border-github-border rounded-lg p-6 shadow-sm transition-colors duration-300">
+      <div className="bg-white/70 dark:bg-black/40 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-6 shadow-xl dark:shadow-2xl transition-all duration-300 h-full flex flex-col">
         <div className="flex items-center gap-2 mb-4">
-          <CalendarIcon className="h-5 w-5 text-gray-400 dark:text-github-muted" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Contribution Activity</h3>
+          <CalendarIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-wide">Contribution Activity</h3>
         </div>
-        <p className="text-gray-500 dark:text-github-muted text-sm">No contribution data available</p>
+        <div className="flex-1 flex items-center justify-center py-10">
+          <p className="text-gray-500 dark:text-gray-400">No contribution data available</p>
+        </div>
       </div>
     );
   }
@@ -23,87 +26,99 @@ const CommitHeatmap = ({ activity }) => {
 
   const totalContributions = data.reduce((sum, d) => sum + d.commits, 0);
   
+  // Premium Glassmorphism Empty State (Zero Commits)
   if (totalContributions === 0) {
     return (
-      <div className="bg-white dark:bg-github-card border border-gray-200 dark:border-github-border rounded-lg p-6 shadow-sm transition-colors duration-300">
+      <div className="bg-white/70 dark:bg-black/40 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-6 shadow-xl dark:shadow-2xl transition-all duration-300 h-full flex flex-col">
         <div className="flex items-center gap-2 mb-4">
-          <CalendarIcon className="h-5 w-5 text-gray-400 dark:text-github-muted" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Contribution Activity</h3>
+          <CalendarIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-wide">Contribution Activity</h3>
         </div>
-        <p className="text-gray-500 dark:text-github-muted text-sm">No contribution activity found for this user</p>
+        <div className="flex-1 flex items-center justify-center py-10">
+          <p className="text-gray-500 dark:text-gray-400">No contribution activity found for this user</p>
+        </div>
       </div>
     );
   }
 
   const maxContributions = Math.max(...data.map(d => d.commits));
 
+  // Opacity-based colors allow the honeycomb background to shine through!
   const getBarColor = (value) => {
+    if (value === 0) return 'rgba(148, 163, 184, 0.05)'; // Nearly invisible for zero
     const ratio = value / maxContributions;
-    if (ratio > 0.7) return '#58a6ff';
-    if (ratio > 0.4) return '#79c0ff';
-    if (ratio > 0.1) return '#a5d6ff';
-    return '#21262d';
+    if (ratio > 0.7) return 'rgba(37, 99, 235, 1)';   // Solid Blue-600
+    if (ratio > 0.4) return 'rgba(59, 130, 246, 0.8)'; // Semi-transparent Blue-500
+    if (ratio > 0.1) return 'rgba(96, 165, 250, 0.5)'; // Transparent Blue-400
+    return 'rgba(147, 197, 253, 0.25)';                // Very transparent Blue-300
   };
 
   // Find most active day
   const mostActiveDay = data.reduce((a, b) => a.commits > b.commits ? a : b);
 
-  return (
-    <div className="bg-white dark:bg-github-card border border-gray-200 dark:border-github-border rounded-lg p-6 shadow-sm transition-colors duration-300">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <CalendarIcon className="h-5 w-5 text-gray-400 dark:text-github-muted" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Contribution Activity</h3>
+  // Glassmorphism Tooltip
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white/90 dark:bg-[#0a0a0a]/90 backdrop-blur-md border border-gray-200/50 dark:border-white/10 rounded-xl p-3 shadow-xl">
+          <p className="text-gray-900 dark:text-gray-200 text-xs font-semibold mb-1">
+            {payload[0].payload.fullDay}
+          </p>
+          <p className="text-blue-600 dark:text-blue-400 text-sm font-bold flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+            {payload[0].value} contribution{payload[0].value !== 1 ? 's' : ''}
+          </p>
         </div>
-        <div className="text-right">
-          <span className="text-gray-500 dark:text-github-muted text-sm">
-            Total: {totalContributions} contributions
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="bg-white/70 dark:bg-black/40 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-6 shadow-xl dark:shadow-2xl transition-all duration-300">
+      
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+        <div className="flex items-center gap-2">
+          <CalendarIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-wide">Contribution Activity</h3>
+        </div>
+        <div className="text-left sm:text-right">
+          <span className="inline-block bg-gray-100/50 dark:bg-white/5 border border-gray-200/50 dark:border-white/5 rounded-lg px-3 py-1 text-gray-700 dark:text-gray-300 text-sm font-semibold">
+            Total: {totalContributions}
           </span>
           {mostActiveDay && mostActiveDay.commits > 0 && (
-            <div className="text-xs text-gray-400 dark:text-github-muted">
-              Most active: {mostActiveDay.fullDay} ({mostActiveDay.commits} contributions)
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 font-medium">
+              Peak: {mostActiveDay.fullDay} ({mostActiveDay.commits})
             </div>
           )}
         </div>
       </div>
       
+      {/* Chart Section */}
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data}>
+          <BarChart data={data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
             <XAxis 
               dataKey="day" 
-              stroke="#94a3b8" 
-              fontSize={12}
+              stroke="#64748b" 
+              fontSize={11}
               axisLine={false}
               tickLine={false}
+              dy={10}
             />
             <YAxis 
-              stroke="#94a3b8" 
-              fontSize={12}
+              stroke="#64748b" 
+              fontSize={11}
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
             />
-            <Tooltip
-              content={({ active, payload }) => {
-                if (active && payload && payload.length) {
-                  return (
-                    <div className="bg-white dark:bg-github-card border border-gray-200 dark:border-github-border rounded-lg p-3 shadow-md">
-                      <p className="text-gray-900 dark:text-white text-sm font-medium">
-                        {payload[0].payload.fullDay}
-                      </p>
-                      <p className="text-blue-600 dark:text-github-accent text-sm">
-                        {payload[0].value} contribution{payload[0].value !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  );
-                }
-                return null;
-              }}
-            />
+            <Tooltip cursor={{ fill: 'rgba(148, 163, 184, 0.05)' }} content={<CustomTooltip />} />
             <Bar
               dataKey="commits"
-              radius={[4, 4, 0, 0]}
+              radius={[6, 6, 0, 0]}
+              maxBarSize={50}
             >
               {data.map((entry, index) => (
                 <Cell 
@@ -116,21 +131,23 @@ const CommitHeatmap = ({ activity }) => {
         </ResponsiveContainer>
       </div>
       
-      <div className="mt-4 flex items-center justify-between text-xs text-gray-500 dark:text-github-muted">
-        <span>Less active</span>
-        <div className="flex gap-1">
-          <div className="w-4 h-3 rounded-sm bg-[#21262d]"></div>
-          <div className="w-4 h-3 rounded-sm bg-[#a5d6ff]"></div>
-          <div className="w-4 h-3 rounded-sm bg-[#79c0ff]"></div>
-          <div className="w-4 h-3 rounded-sm bg-[#58a6ff]"></div>
+      {/* Legend */}
+      <div className="mt-6 flex items-center justify-between sm:justify-end gap-3 text-xs text-gray-500 dark:text-gray-400 font-medium">
+        <span>Less</span>
+        <div className="flex gap-1.5 border border-gray-200/50 dark:border-white/5 p-1 rounded-md bg-white/30 dark:bg-black/20">
+          <div className="w-4 h-3 rounded-[3px]" style={{ backgroundColor: 'rgba(148, 163, 184, 0.05)' }}></div>
+          <div className="w-4 h-3 rounded-[3px]" style={{ backgroundColor: 'rgba(147, 197, 253, 0.25)' }}></div>
+          <div className="w-4 h-3 rounded-[3px]" style={{ backgroundColor: 'rgba(96, 165, 250, 0.5)' }}></div>
+          <div className="w-4 h-3 rounded-[3px]" style={{ backgroundColor: 'rgba(59, 130, 246, 0.8)' }}></div>
+          <div className="w-4 h-3 rounded-[3px]" style={{ backgroundColor: 'rgba(37, 99, 235, 1)' }}></div>
         </div>
-        <span>More active</span>
+        <span>More</span>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-github-border">
-        <p className="text-gray-400 dark:text-github-muted text-xs text-center">
-          ℹ️ Shows <span className="text-gray-600 dark:text-github-text">contributions</span> (commits + issues + PRs + reviews) by day of week.
-          Total may differ from GitHub profile as it includes all contribution types.
+      {/* Footer Info */}
+      <div className="mt-5 pt-4 border-t border-gray-200/50 dark:border-white/5">
+        <p className="text-gray-400 dark:text-gray-500 text-xs text-center">
+          Includes commits, issues, PRs, and reviews by day of week.
         </p>
       </div>
     </div>
