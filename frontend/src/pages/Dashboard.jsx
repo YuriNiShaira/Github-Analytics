@@ -1,4 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import { useQuery } from '@apollo/client';
+import { GET_CONTRIBUTIONS } from '../graphql/client';  
 import { useGithubData } from '../hooks/useGithubData';
 import SearchBar from '../components/SearchBar';
 import ProfileCard from '../components/dashboard/ProfileCard';
@@ -8,26 +10,60 @@ import RepositoriesTable from '../components/dashboard/RepositoriesTable';
 import CommitHeatmap from '../components/dashboard/CommitHeatmap';
 import StarHistory from '../components/dashboard/StarHistory';
 import ActivityTimeline from '../components/dashboard/ActivityTimeline';
-import UserComparison from '../components/dashboard/UserComparison';
-import ComparisonSearch from '../components/ComparisonSearch';
 import ExportButton from '../components/common/ExportButton';
 import ThemeToggle from '../components/common/ThemeToggle';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
-import { fetchGithubUser } from '../api/github';
+import ComparisonSearch from '../components/ComparisonSearch';
+import UserComparison from '../components/dashboard/UserComparison';
 
 const Dashboard = () => {
   const { data, loading, error, fetchData } = useGithubData();
+  const [username, setUsername] = useState('');
+  const [showComparison, setShowComparison] = useState(false);
   const [comparisonData, setComparisonData] = useState(null);
   const [comparisonLoading, setComparisonLoading] = useState(false);
   const [comparisonError, setComparisonError] = useState(null);
-  const [showComparison, setShowComparison] = useState(false);
   const dashboardRef = useRef(null);
 
-  const handleSearch = (username) => {
-    fetchData(username);
-    setShowComparison(false);
+  // GraphQL query for accurate contribution data
+  const { 
+    data: contributionData, 
+    loading: contributionLoading,
+    error: contributionError 
+  } = useQuery(GET_CONTRIBUTIONS, {
+    variables: {
+      username: username,
+      days: 30
+    },
+    skip: !username || username.length === 0
+  });
+
+  const handleSearch = (searchUsername) => {
+    setUsername(searchUsername);
+    fetchData(searchUsername);
   };
+
+  // Combine REST and GraphQL data
+  const combinedData = data ? {
+    ...data,
+    total_contributions: contributionData?.githubContributions?.totalContributions || 0,
+    total_commits: contributionData?.githubContributions?.totalCommits || 0,
+    activity_timeline: contributionData?.githubContributions?.dailyActivity || [],
+    data_source: contributionData?.githubContributions?.source || 'rest'
+  } : null;
+
+  // Log combined data for debugging
+  useEffect(() => {
+    if (combinedData) {
+      console.log('Combined Data:', {
+        total_contributions: combinedData.total_contributions,
+        total_commits: combinedData.total_commits,
+        data_source: combinedData.data_source,
+        activity_timeline_length: combinedData.activity_timeline?.length
+      });
+    }
+  }, [combinedData]);
 
   const handleCompare = async (username1, username2) => {
     setComparisonLoading(true);
@@ -49,8 +85,8 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-github-dark text-slate-700 dark:text-github-text transition-colors duration-300">
-      <header className="border-b border-gray-200 dark:border-github-border bg-white/80 dark:bg-github-card/50 backdrop-blur sticky top-0 z-10 transition-colors duration-300 shadow-sm dark:shadow-none">
+    <div className="min-h-screen bg-white dark:bg-github-dark text-gray-900 dark:text-github-text transition-colors duration-300">
+      <header className="border-b border-gray-200 dark:border-github-border bg-white/50 dark:bg-github-card/50 backdrop-blur sticky top-0 z-10 transition-colors duration-300">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -60,11 +96,11 @@ const Dashboard = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowComparison(!showComparison)}
-                className="px-3 py-1.5 text-sm font-medium bg-gray-100 dark:bg-github-border text-gray-700 dark:text-github-text border border-gray-200 dark:border-transparent rounded-md hover:bg-gray-200 dark:hover:bg-github-border/70 transition-colors"
+                className="px-3 py-1.5 text-sm bg-gray-200 dark:bg-github-border text-gray-700 dark:text-github-text rounded-md hover:bg-gray-300 dark:hover:bg-github-border/70 transition-colors"
               >
                 {showComparison ? 'Hide Comparison' : 'Compare Users'}
               </button>
-              {data && !loading && <ExportButton targetRef={dashboardRef} />}
+              {combinedData && !loading && <ExportButton targetRef={dashboardRef} />}
               <ThemeToggle />
             </div>
           </div>
@@ -92,42 +128,48 @@ const Dashboard = () => {
         )}
 
         {loading && <LoadingSpinner message="Fetching data from GitHub..." />}
-        {error && <ErrorMessage message={error} onRetry={() => handleSearch(data?.username || '')} />}
+        {error && <ErrorMessage message={error} onRetry={() => handleSearch(username)} />}
 
-        {data && !loading && !error && (
+        {combinedData && !loading && !error && (
           <div ref={dashboardRef} className="space-y-6">
-            <ProfileCard profile={data} />
+            <ProfileCard profile={combinedData} />
+            
             <StatsSummary stats={{
-              total_stars: data.total_stars,
-              total_forks: data.total_forks,
-              total_repos: data.public_repos,
-              total_commits_estimate: data.total_commits_estimate,
+              total_stars: combinedData.total_stars,
+              total_forks: combinedData.total_forks,
+              total_repos: combinedData.public_repos,
+              total_contributions: combinedData.total_contributions,  
+              total_commits: combinedData.total_commits,              
+              data_source: combinedData.data_source,                  
             }} />
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <CommitHeatmap activity={data.commit_activity} />
-              <StarHistory repositories={data.repositories || []} />
+              <CommitHeatmap activity={combinedData.commit_activity} />
+              <StarHistory repositories={combinedData.repositories || []} />
             </div>
 
-            <ActivityTimeline data={data.activity_timeline} />
+            <ActivityTimeline 
+              data={combinedData.activity_timeline} 
+              source={combinedData.data_source}
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1">
                 <LanguageChart 
-                  languages={data.language_stats?.languages || {}}
-                  totalBytes={data.language_stats?.total_bytes || 0}
+                  languages={combinedData.language_stats?.languages || {}}
+                  totalBytes={combinedData.language_stats?.total_bytes || 0}
                 />
               </div>
               <div className="lg:col-span-2">
-                <RepositoriesTable repositories={data.repositories || []} />
+                <RepositoriesTable repositories={combinedData.repositories || []} />
               </div>
             </div>
           </div>
         )}
 
-        {!data && !loading && !error && !showComparison && (
-          <div className="text-center py-20 bg-white dark:bg-github-card border border-gray-200 dark:border-github-border rounded-xl shadow-sm max-w-2xl mx-auto">
-            <div className="max-w-md mx-auto px-4">
+        {!combinedData && !loading && !error && !showComparison && (
+          <div className="text-center py-20">
+            <div className="max-w-md mx-auto">
               <div className="text-6xl mb-6">📊</div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 GitHub Analytics Dashboard
@@ -138,7 +180,7 @@ const Dashboard = () => {
               </p>
               <button
                 onClick={() => setShowComparison(true)}
-                className="mt-4 text-blue-600 dark:text-github-accent hover:underline font-medium text-sm transition-colors"
+                className="mt-4 text-blue-600 dark:text-github-accent hover:underline"
               >
                 Or compare two users →
               </button>
