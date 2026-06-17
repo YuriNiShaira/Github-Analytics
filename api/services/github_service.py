@@ -158,24 +158,43 @@ class GitHubService:
     
     def estimate_total_commits(self, username):
         """
-        Estimate total commits by analyzing push events
-        Note: This is an approximation since GitHub API limits this
+        Show commit activity based on push events
+        Note: GitHub API doesn't provide accurate total commit counts
         """
         try:
-            events = self.get_user_events(username, max_pages=3)
-            push_events = [e for e in events if e['type'] == 'PushEvent']
+            events = self.get_user_events(username, max_pages=5)
+            push_count = 0
+            commit_estimate = 0
             
-            # Count commits from push events
-            total_commits = sum(
-                len(event['payload']['commits']) 
-                for event in push_events 
-                if 'commits' in event['payload']
-            )
+            for event in events:
+                if event['type'] == 'PushEvent':
+                    push_count += 1
+                    payload = event.get('payload', {})
+                    
+                    # Get commits if available
+                    commits = payload.get('commits', [])
+                    commit_count = len(commits)
+                    
+                    # Fallback: use size field
+                    if commit_count == 0:
+                        commit_count = payload.get('size', 0)
+                    
+                    # If still 0, it's a push with unknown commits
+                    if commit_count == 0:
+                        commit_count = 1  # Count the push itself
+                    
+                    commit_estimate += commit_count
             
-            return total_commits
-        except GitHubAPIError:
+            # Return both push count and commit estimate
+            return {
+                'pushes': push_count,
+                'estimated_commits': commit_estimate,
+                'note': 'Based on public push events from the last 90 days. Exact commit counts may vary.'
+            }
+            
+        except Exception as e:
             return None
-    
+        
     def get_commit_activity(self, username):
         """Get commit activity by day of week with fallback"""
         try:

@@ -21,6 +21,7 @@ class GitHubProfileSerializer(serializers.ModelSerializer):
     total_stars = serializers.SerializerMethodField()
     total_forks = serializers.SerializerMethodField()
     total_commits_estimate = serializers.SerializerMethodField()
+    commit_summary = serializers.SerializerMethodField()
     commit_activity = serializers.SerializerMethodField()
     activity_timeline = serializers.SerializerMethodField()
     
@@ -31,7 +32,7 @@ class GitHubProfileSerializer(serializers.ModelSerializer):
             'company', 'blog', 'followers', 'following', 'public_repos',
             'created_at', 'repositories', 'language_stats',
             'total_stars', 'total_forks', 'total_commits_estimate',
-            'commit_activity', 'activity_timeline'
+            'commit_summary', 'commit_activity', 'activity_timeline'  
         ]
     
     def get_total_stars(self, obj):
@@ -42,7 +43,21 @@ class GitHubProfileSerializer(serializers.ModelSerializer):
     
     def get_total_commits_estimate(self, obj):
         # This will be set in the view
-        return getattr(obj, '_total_commits_estimate', None)
+        data = getattr(obj, '_total_commits_estimate', None)
+        if data and isinstance(data, dict):
+            return data.get('estimated_commits', 'N/A')
+        return 'N/A'
+    
+    def get_commit_summary(self, obj):
+        """Get commit summary with details"""
+        data = getattr(obj, '_total_commits_estimate', None)
+        if data and isinstance(data, dict):
+            return {
+                'pushes': data.get('pushes', 0),
+                'estimated_commits': data.get('estimated_commits', 0),
+                'note': data.get('note', '')
+            }
+        return None
     
     def get_commit_activity(self, obj):
         # This will be set in the view

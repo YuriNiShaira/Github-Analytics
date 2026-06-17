@@ -137,12 +137,12 @@ class GitHubUserAnalyticsView(APIView):
         )
         
         # Get commit data
-        total_commits = self.github_service.estimate_total_commits(username)
+        commit_data = self.github_service.estimate_total_commits(username)
         commit_activity = self.github_service.get_commit_activity(username)
         activity_timeline = self.github_service.get_activity_timeline(username)
         
-        # Attach data to profile object for serializer
-        profile._total_commits_estimate = total_commits
+        # Attach data to profile object
+        profile._total_commits_estimate = commit_data 
         profile._commit_activity = commit_activity
         profile._activity_timeline = activity_timeline
         
