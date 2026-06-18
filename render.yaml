@@ -37,3 +37,4 @@ services:
     name: github-analytics-redis
     plan: free
     maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
