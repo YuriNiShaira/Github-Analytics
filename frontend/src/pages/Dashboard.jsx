@@ -24,6 +24,7 @@ const Dashboard = () => {
   const [comparisonData, setComparisonData] = useState(null);
   const [comparisonLoading, setComparisonLoading] = useState(false);
   const [comparisonError, setComparisonError] = useState(null);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const dashboardRef = useRef(null);
 
   const { 
@@ -35,9 +36,29 @@ const Dashboard = () => {
     skip: !username || username.length === 0
   });
 
-  const handleSearch = (searchUsername) => {
+  const handleSearch = async (searchUsername) => {
     setUsername(searchUsername);
-    fetchData(searchUsername);
+    setLoadingProgress(0);
+    
+    // Simulate progress updates during fetch
+    const progressInterval = setInterval(() => {
+      setLoadingProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + 10;
+      });
+    }, 500);
+    
+    try {
+      await fetchData(searchUsername);
+      setLoadingProgress(100);
+    } catch (err) {
+      setLoadingProgress(0);
+    } finally {
+      clearInterval(progressInterval);
+    }
   };
 
   const combinedData = data ? {
@@ -58,6 +79,13 @@ const Dashboard = () => {
       });
     }
   }, [combinedData]);
+
+  // Reset progress when data is loaded
+  useEffect(() => {
+    if (data) {
+      setLoadingProgress(100);
+    }
+  }, [data]);
 
   const handleCompare = async (username1, username2) => {
     setComparisonLoading(true);
@@ -133,7 +161,28 @@ const Dashboard = () => {
             </section>
           )}
 
-          {loading && <LoadingSpinner message="Fetching data from GitHub..." />}
+          {loading && (
+            <div className="space-y-4">
+              <LoadingSpinner message="Fetching data from GitHub..." />
+              {loadingProgress > 0 && loadingProgress < 100 && (
+                <div className="max-w-md mx-auto">
+                  <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                    <div 
+                      className="bg-blue-600 dark:bg-blue-500 h-2.5 rounded-full transition-all duration-300 ease-out"
+                      style={{ width: `${loadingProgress}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">
+                    {loadingProgress < 30 && 'Connecting to GitHub...'}
+                    {loadingProgress >= 30 && loadingProgress < 60 && 'Fetching user data...'}
+                    {loadingProgress >= 60 && loadingProgress < 90 && 'Processing repositories...'}
+                    {loadingProgress >= 90 && loadingProgress < 100 && 'Almost done...'}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          
           {error && <ErrorMessage message={error} onRetry={() => handleSearch(username)} />}
 
           {combinedData && !loading && !error && (
