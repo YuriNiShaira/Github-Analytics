@@ -134,25 +134,37 @@ class GitHubService:
         return self._paginate(f'/users/{username}/events', max_pages=max_pages)
     
     def calculate_language_stats(self, repos_data):
-        """Calculate aggregated language stats across all repos"""
+        """Calculate language stats more efficiently - only process top 20 repos by size"""
         language_bytes = {}
         
-        for repo in repos_data:
-            # Skip forks if you want, or include them - your choice
+        # Sort repositories by size (descending) and take top 20
+        # This gives us the most significant repos while avoiding rate limits
+        sorted_repos = sorted(
+            repos_data, 
+            key=lambda x: x.get('size', 0), 
+            reverse=True
+        )[:20]
+        
+        processed_count = 0
+        for repo in sorted_repos:
+            # Skip forks to avoid duplicate language stats
             if repo.get('fork'):
                 continue
                 
             owner = repo['owner']['login']
             repo_name = repo['name']
             
-            # Fetch languages for this repo
             try:
                 languages = self.get_repo_languages(owner, repo_name)
+                processed_count += 1
                 for lang, bytes_count in languages.items():
                     language_bytes[lang] = language_bytes.get(lang, 0) + bytes_count
             except GitHubAPIError:
                 # Skip repos we can't fetch languages for
                 continue
+        
+        # Log how many repos were processed
+        print(f"Processed {processed_count} repositories for language stats")
         
         return language_bytes
     

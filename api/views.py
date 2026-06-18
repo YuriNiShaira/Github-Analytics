@@ -1,5 +1,6 @@
 import requests
 import logging
+import sys
 from datetime import timezone as datetime_timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -46,31 +47,33 @@ class GitHubUserAnalyticsView(APIView):
         try:
             with transaction.atomic():
                 result_data = self._fetch_and_store_user_data(username)
-                
-                # Cache for 1 hour
                 cache.set(cache_key, result_data, timeout=3600)
-                
                 return Response(result_data)
                 
         except RateLimitExceeded as e:
             return Response({
-                'error': str(e),
+                'error': 'Rate limit exceeded. Please wait a moment and try again.',
                 'retry_after': 60
             }, status=status.HTTP_429_TOO_MANY_REQUESTS)
             
         except GitHubAPIError as e:
-            if 'Not Found' in str(e) or '404' in str(e):
+            error_msg = str(e)
+            # Check for "Not Found" specifically
+            if 'Not Found' in error_msg or '404' in error_msg:
                 return Response({
-                    'error': f'User "{username}" not found on GitHub. Please check the username.'
-                }, status=status.HTTP_404_NOT_FOUND)
+                    'error': f'User "{username}" not found on GitHub. Please check the username and try again.'
+                }, status=status.HTTP_404_NOT_FOUND) 
             return Response({
-                'error': f'GitHub API error: {str(e)}'
+                'error': f'GitHub API error: {error_msg}'
             }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except BrokenPipeError:
+            return Response({}, status=status.HTTP_204_NO_CONTENT)
             
         except Exception as e:
             logger.error(f"Unexpected error for user {username}: {str(e)}")
             return Response({
-                'error': 'Something went wrong. Please try again in a moment.'
+                'error': 'Something went wrong on our end. Please try again in a moment.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def _fetch_and_store_user_data(self, username):
@@ -212,10 +215,20 @@ class GitHubCompareView(APIView):
                 })
                 
         except GitHubAPIError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            error_msg = str(e)
+            # Check for "Not Found" specifically
+            if 'Not Found' in error_msg or '404' in error_msg:
+                return Response({
+                    'error': f'User "{username1}" or "{username2}" not found on GitHub. Please check the usernames and try again.'
+                }, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                'error': f'GitHub API error: {error_msg}'
+            }, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             logger.error(f"Comparison error: {str(e)}")
-            return Response({'error': 'Failed to compare users'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({
+                'error': 'Failed to compare users. Please try again in a moment.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def _fetch_user_comparison_data(self, username):
         """Fetch data for comparison"""
@@ -301,6 +314,18 @@ class GitHubDebugEventsView(APIView):
                 ]
             })
             
+        except GitHubAPIError as e:
+            error_msg = str(e)
+            # Check for "Not Found" specifically
+            if 'Not Found' in error_msg or '404' in error_msg:
+                return Response({
+                    'error': f'User "{username}" not found on GitHub. Please check the username and try again.'
+                }, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                'error': f'GitHub API error: {error_msg}'
+            }, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             logger.error(f"Debug error for {username}: {str(e)}")
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                'error': 'Failed to fetch debug data. Please try again in a moment.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

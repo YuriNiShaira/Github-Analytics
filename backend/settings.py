@@ -8,6 +8,16 @@ from pathlib import Path
 import os
 from decouple import config
 
+import logging
+
+# Suppress broken pipe errors in development
+logging.getLogger('django.server').handlers = []
+
+# Or filter specific messages
+import warnings
+warnings.filterwarnings('ignore', message='.*Broken pipe.*')
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
