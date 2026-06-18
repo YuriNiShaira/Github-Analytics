@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: github-analytics-api
+    runtime: python
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+    startCommand: |
+      python manage.py migrate
+      gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: RENDER
+        value: "true"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: supabase-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: github-analytics-redis
+          type: redis
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: DEBUG
+        value: false
+      - key: ALLOWED_HOSTS
+        value: "github-analytics-api.onrender.com"
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://your-frontend.vercel.app"
+      - key: PYTHON_VERSION
+        value: "3.10.12"
+
+  - type: redis
+    name: github-analytics-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
