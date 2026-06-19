@@ -1,25 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
-const CommitHeatmap = ({ activity, weekRange, onWeekChange }) => {
-  const [weekOffset, setWeekOffset] = useState(0);
+const CommitHeatmap = ({ activity }) => {
+  const [dateRange, setDateRange] = useState('7'); // '7' or '30'
 
-  const handlePreviousWeek = () => {
-    const newOffset = weekOffset + 1;
-    setWeekOffset(newOffset);
-    if (onWeekChange) onWeekChange(newOffset);
-  };
-
-  const handleNextWeek = () => {
-    if (weekOffset > 0) {
-      const newOffset = weekOffset - 1;
-      setWeekOffset(newOffset);
-      if (onWeekChange) onWeekChange(newOffset);
-    }
-  };
-
-  // Check if we have data
+  // If activity is null or empty
   if (!activity || typeof activity !== 'object') {
     return (
       <div className="bg-white/70 dark:bg-black/40 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-6 shadow-xl dark:shadow-2xl transition-all duration-300 h-full flex flex-col">
@@ -34,13 +20,18 @@ const CommitHeatmap = ({ activity, weekRange, onWeekChange }) => {
     );
   }
 
-  const data = Object.entries(activity).map(([day, commits]) => ({
+  // Convert activity object to array and sort by day of week
+  const allData = Object.entries(activity).map(([day, commits]) => ({
     day: day.slice(0, 3),
     commits: typeof commits === 'number' ? commits : 0,
     fullDay: day
   }));
 
-  const totalContributions = data.reduce((sum, d) => sum + d.commits, 0);
+  // Sort days in correct order
+  const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const sortedData = [...allData].sort((a, b) => dayOrder.indexOf(a.fullDay) - dayOrder.indexOf(b.fullDay));
+
+  const totalContributions = sortedData.reduce((sum, d) => sum + d.commits, 0);
   
   if (totalContributions === 0) {
     return (
@@ -50,13 +41,13 @@ const CommitHeatmap = ({ activity, weekRange, onWeekChange }) => {
           <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-wide">Contribution Activity</h3>
         </div>
         <div className="flex-1 flex items-center justify-center py-10">
-          <p className="text-gray-500 dark:text-gray-400">No activity for this week</p>
+          <p className="text-gray-500 dark:text-gray-400">No contribution activity found</p>
         </div>
       </div>
     );
   }
 
-  const maxContributions = Math.max(...data.map(d => d.commits));
+  const maxContributions = Math.max(...sortedData.map(d => d.commits));
 
   const getBarColor = (value) => {
     if (value === 0) return 'rgba(148, 163, 184, 0.05)';
@@ -67,7 +58,7 @@ const CommitHeatmap = ({ activity, weekRange, onWeekChange }) => {
     return 'rgba(147, 197, 253, 0.25)';
   };
 
-  const mostActiveDay = data.reduce((a, b) => a.commits > b.commits ? a : b);
+  const mostActiveDay = sortedData.reduce((a, b) => a.commits > b.commits ? a : b);
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -86,54 +77,33 @@ const CommitHeatmap = ({ activity, weekRange, onWeekChange }) => {
     return null;
   };
 
-  // Format week range display
-  const weekLabel = weekRange 
-    ? `${weekRange.start} - ${weekRange.end}, ${weekRange.year}`
-    : weekOffset === 0 ? 'This Week' : `${weekOffset} week${weekOffset > 1 ? 's' : ''} ago`;
-
   return (
     <div className="bg-white/70 dark:bg-black/40 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-6 shadow-xl dark:shadow-2xl transition-all duration-300">
       
-      {/* Header Section */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
         <div className="flex items-center gap-2">
           <CalendarIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
           <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-wide">Contribution Activity</h3>
         </div>
         
-        {/* Week Navigation */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handlePreviousWeek}
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
-            aria-label="Previous week"
+        {/* Date Range Filter - Same as Activity Timeline */}
+        <div className="flex items-center gap-2">
+          <select
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value)}
+            className="bg-white/50 dark:bg-black/30 border border-gray-200/50 dark:border-white/10 rounded-lg px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
           >
-            <ChevronLeftIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-          </button>
-          
-          <span className="text-xs font-medium text-gray-600 dark:text-gray-300 min-w-[120px] text-center">
-            {weekLabel}
-          </span>
-          
-          <button
-            onClick={handleNextWeek}
-            disabled={weekOffset === 0}
-            className={`p-1.5 rounded-lg transition-colors ${
-              weekOffset === 0 
-                ? 'opacity-30 cursor-not-allowed' 
-                : 'hover:bg-gray-100 dark:hover:bg-white/5'
-            }`}
-            aria-label="Next week"
-          >
-            <ChevronRightIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-          </button>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+          </select>
         </div>
       </div>
       
-      {/* Chart Section */}
+      {/* Chart */}
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+          <BarChart data={sortedData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
             <XAxis 
               dataKey="day" 
               stroke="#64748b" 
@@ -155,7 +125,7 @@ const CommitHeatmap = ({ activity, weekRange, onWeekChange }) => {
               radius={[6, 6, 0, 0]}
               maxBarSize={50}
             >
-              {data.map((entry, index) => (
+              {sortedData.map((entry, index) => (
                 <Cell 
                   key={`cell-${index}`} 
                   fill={getBarColor(entry.commits)}
@@ -179,9 +149,29 @@ const CommitHeatmap = ({ activity, weekRange, onWeekChange }) => {
         <span>More</span>
       </div>
 
-      <div className="mt-5 pt-4 border-t border-gray-200/50 dark:border-white/5">
+      {/* Stats Footer */}
+      <div className="mt-5 pt-4 border-t border-gray-200/50 dark:border-white/5 grid grid-cols-3 gap-4">
+        <div className="text-center">
+          <div className="text-xs text-gray-400 dark:text-gray-500">Total</div>
+          <div className="text-sm font-bold text-gray-900 dark:text-white">{totalContributions}</div>
+        </div>
+        <div className="text-center">
+          <div className="text-xs text-gray-400 dark:text-gray-500">Average</div>
+          <div className="text-sm font-bold text-gray-900 dark:text-white">
+            {(totalContributions / 7).toFixed(1)}
+          </div>
+        </div>
+        <div className="text-center">
+          <div className="text-xs text-gray-400 dark:text-gray-500">Most Active</div>
+          <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
+            {mostActiveDay?.fullDay || 'N/A'}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 pt-3 border-t border-gray-200/50 dark:border-white/5">
         <p className="text-gray-400 dark:text-gray-500 text-xs text-center">
-          {weekOffset === 0 ? 'Current week activity' : `Week of ${weekLabel}`}
+          Contributions by day of week
         </p>
       </div>
     </div>
