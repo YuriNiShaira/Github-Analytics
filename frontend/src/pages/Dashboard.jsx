@@ -91,7 +91,8 @@ const Dashboard = () => {
     setComparisonLoading(true);
     setComparisonError(null);
     try {
-      const response = await fetch(`http://localhost:8000/api/github/compare/${username1}/${username2}/`);
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const response = await fetch(`${API_URL}/github/compare/${username1}/${username2}/`);
       const data = await response.json();
       if (response.ok) {
         setComparisonData(data);
