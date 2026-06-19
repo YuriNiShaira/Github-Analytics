@@ -1,19 +1,33 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
-const CommitHeatmap = ({ activity }) => {
-  const [dateRange, setDateRange] = useState('7'); // '7' or '30'
+const CommitHeatmap = ({ activity, weekRange, onWeekChange }) => {
+  const [weekOffset, setWeekOffset] = useState(0);
 
-  // If activity is null or empty
+  const handlePreviousWeek = () => {
+    const newOffset = weekOffset + 1;
+    setWeekOffset(newOffset);
+    if (onWeekChange) onWeekChange(newOffset);
+  };
+
+  const handleNextWeek = () => {
+    if (weekOffset > 0) {
+      const newOffset = weekOffset - 1;
+      setWeekOffset(newOffset);
+      if (onWeekChange) onWeekChange(newOffset);
+    }
+  };
+
+  // Premium Glassmorphism Empty State
   if (!activity || typeof activity !== 'object') {
     return (
-      <div className="bg-white/70 dark:bg-black/40 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-6 shadow-xl dark:shadow-2xl transition-all duration-300 h-full flex flex-col">
+      <div className="bg-white/70 dark:bg-black/40 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-6 shadow-xl dark:shadow-2xl">
         <div className="flex items-center gap-2 mb-4">
           <CalendarIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-wide">Contribution Activity</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-wide">This Week</h3>
         </div>
-        <div className="flex-1 flex items-center justify-center py-10">
+        <div className="py-10 text-center">
           <p className="text-gray-500 dark:text-gray-400">No contribution data available</p>
         </div>
       </div>
@@ -21,33 +35,55 @@ const CommitHeatmap = ({ activity }) => {
   }
 
   // Convert activity object to array and sort by day of week
-  const allData = Object.entries(activity).map(([day, commits]) => ({
-    day: day.slice(0, 3),
-    commits: typeof commits === 'number' ? commits : 0,
-    fullDay: day
-  }));
-
-  // Sort days in correct order
   const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  const sortedData = [...allData].sort((a, b) => dayOrder.indexOf(a.fullDay) - dayOrder.indexOf(b.fullDay));
+  const data = Object.entries(activity)
+    .map(([day, commits]) => ({
+      day: day.slice(0, 3),
+      commits: typeof commits === 'number' ? commits : 0,
+      fullDay: day
+    }))
+    .sort((a, b) => dayOrder.indexOf(a.fullDay) - dayOrder.indexOf(b.fullDay));
 
-  const totalContributions = sortedData.reduce((sum, d) => sum + d.commits, 0);
+  const totalContributions = data.reduce((sum, d) => sum + d.commits, 0);
   
+  // Zero state
   if (totalContributions === 0) {
     return (
-      <div className="bg-white/70 dark:bg-black/40 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-6 shadow-xl dark:shadow-2xl transition-all duration-300 h-full flex flex-col">
-        <div className="flex items-center gap-2 mb-4">
-          <CalendarIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-wide">Contribution Activity</h3>
+      <div className="bg-white/70 dark:bg-black/40 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-6 shadow-xl dark:shadow-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-wide">This Week</h3>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+              {weekRange?.start || 'No activity'}
+            </span>
+            <button
+              onClick={handlePreviousWeek}
+              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+            >
+              <ChevronLeftIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+            </button>
+            <button
+              onClick={handleNextWeek}
+              disabled={weekOffset === 0}
+              className={`p-1.5 rounded-lg transition-colors ${
+                weekOffset === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-white/5'
+              }`}
+            >
+              <ChevronRightIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+            </button>
+          </div>
         </div>
-        <div className="flex-1 flex items-center justify-center py-10">
-          <p className="text-gray-500 dark:text-gray-400">No contribution activity found</p>
+        <div className="py-10 text-center">
+          <p className="text-gray-500 dark:text-gray-400">No activity this week</p>
         </div>
       </div>
     );
   }
 
-  const maxContributions = Math.max(...sortedData.map(d => d.commits));
+  const maxContributions = Math.max(...data.map(d => d.commits));
 
   const getBarColor = (value) => {
     if (value === 0) return 'rgba(148, 163, 184, 0.05)';
@@ -58,8 +94,9 @@ const CommitHeatmap = ({ activity }) => {
     return 'rgba(147, 197, 253, 0.25)';
   };
 
-  const mostActiveDay = sortedData.reduce((a, b) => a.commits > b.commits ? a : b);
+  const mostActiveDay = data.reduce((a, b) => a.commits > b.commits ? a : b);
 
+  // Glassmorphism Tooltip
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       return (
@@ -77,33 +114,47 @@ const CommitHeatmap = ({ activity }) => {
     return null;
   };
 
+  // Format week label
+  const weekLabel = weekRange 
+    ? `${weekRange.start} - ${weekRange.end}`
+    : weekOffset === 0 ? 'This Week' : `${weekOffset} week${weekOffset > 1 ? 's' : ''} ago`;
+
   return (
     <div className="bg-white/70 dark:bg-black/40 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-6 shadow-xl dark:shadow-2xl transition-all duration-300">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <CalendarIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-wide">Contribution Activity</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-wide">This Week</h3>
         </div>
         
-        {/* Date Range Filter - Same as Activity Timeline */}
-        <div className="flex items-center gap-2">
-          <select
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            className="bg-white/50 dark:bg-black/30 border border-gray-200/50 dark:border-white/10 rounded-lg px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+            {weekLabel}
+          </span>
+          <button
+            onClick={handlePreviousWeek}
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
           >
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-          </select>
+            <ChevronLeftIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+          </button>
+          <button
+            onClick={handleNextWeek}
+            disabled={weekOffset === 0}
+            className={`p-1.5 rounded-lg transition-colors ${
+              weekOffset === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-white/5'
+            }`}
+          >
+            <ChevronRightIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+          </button>
         </div>
       </div>
       
       {/* Chart */}
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={sortedData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+          <BarChart data={data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
             <XAxis 
               dataKey="day" 
               stroke="#64748b" 
@@ -125,7 +176,7 @@ const CommitHeatmap = ({ activity }) => {
               radius={[6, 6, 0, 0]}
               maxBarSize={50}
             >
-              {sortedData.map((entry, index) => (
+              {data.map((entry, index) => (
                 <Cell 
                   key={`cell-${index}`} 
                   fill={getBarColor(entry.commits)}
@@ -149,7 +200,7 @@ const CommitHeatmap = ({ activity }) => {
         <span>More</span>
       </div>
 
-      {/* Stats Footer */}
+      {/* Stats */}
       <div className="mt-5 pt-4 border-t border-gray-200/50 dark:border-white/5 grid grid-cols-3 gap-4">
         <div className="text-center">
           <div className="text-xs text-gray-400 dark:text-gray-500">Total</div>
@@ -162,7 +213,7 @@ const CommitHeatmap = ({ activity }) => {
           </div>
         </div>
         <div className="text-center">
-          <div className="text-xs text-gray-400 dark:text-gray-500">Most Active</div>
+          <div className="text-xs text-gray-400 dark:text-gray-500">Peak Day</div>
           <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
             {mostActiveDay?.fullDay || 'N/A'}
           </div>
@@ -171,7 +222,7 @@ const CommitHeatmap = ({ activity }) => {
 
       <div className="mt-3 pt-3 border-t border-gray-200/50 dark:border-white/5">
         <p className="text-gray-400 dark:text-gray-500 text-xs text-center">
-          Contributions by day of week
+          Contributions by day of the week
         </p>
       </div>
     </div>
