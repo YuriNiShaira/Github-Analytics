@@ -141,12 +141,19 @@ class GitHubUserAnalyticsView(APIView):
         
         # Get commit data
         commit_data = self.github_service.estimate_total_commits(username)
-        commit_activity = self.github_service.get_commit_activity(username, week_offset=0)
+        commit_activity_data = self.github_service.get_commit_activity(username, week_offset=0)
         activity_timeline = self.github_service.get_activity_timeline(username)
+        
+        # Handle commit activity data with week info
+        if commit_activity_data:
+            profile._commit_activity = commit_activity_data.get('activity')
+            profile._commit_week_info = commit_activity_data.get('week_range')
+        else:
+            profile._commit_activity = None
+            profile._commit_week_info = None
         
         # Attach data to profile object
         profile._total_commits_estimate = commit_data 
-        profile._commit_activity = commit_activity
         profile._activity_timeline = activity_timeline
         
         # Serialize and return
@@ -288,7 +295,14 @@ class GitHubDebugEventsView(APIView):
             )
             
             # Get commit activity and timeline
-            commit_activity = service.get_commit_activity(username)
+            commit_activity_data = service.get_commit_activity(username, week_offset=0)
+            if commit_activity_data:
+                commit_activity = commit_activity_data.get('activity')
+                commit_week_info = commit_activity_data.get('week_range')
+            else:
+                commit_activity = None
+                commit_week_info = None
+            
             activity_timeline = service.get_activity_timeline(username)
             
             # Get repository count for context
@@ -302,6 +316,7 @@ class GitHubDebugEventsView(APIView):
                 'total_commits_from_events': total_commits,
                 'repository_count': len(repos) if repos else 0,
                 'commit_activity': commit_activity,
+                'commit_week_info': commit_week_info,
                 'activity_timeline': activity_timeline,
                 'sample_events': [
                     {

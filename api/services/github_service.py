@@ -228,11 +228,18 @@ class GitHubService:
             return None
         
     def get_commit_activity(self, username, week_offset=0):
-        """Get commit activity for a specific week (0 = current week, 1 = last week, etc.)"""
+        """Get commit activity for a specific week (0 = current week, 1 = last week, etc.)
+        
+        Args:
+            username: GitHub username
+            week_offset: 0 = current week, 1 = last week, 2 = two weeks ago, etc.
+        
+        Returns:
+            dict: Contains 'activity' dict with commit counts per day and 'week_range' info
+        """
         try:
             events = self.get_user_events(username, max_pages=10)
             
-            from datetime import datetime, timedelta
             today = datetime.now()
             
             # Calculate the start of the target week (Monday)
@@ -259,6 +266,8 @@ class GitHubService:
                     created_at = event.get('created_at')
                     if created_at:
                         dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                        
+                        # Only count events from this specific week
                         if start_of_week <= dt <= end_of_week:
                             commit_count = len(event['payload'].get('commits', []))
                             if commit_count == 0:
@@ -268,7 +277,11 @@ class GitHubService:
                             day_name = dt.strftime('%A')
                             commit_days[day_name] = commit_days.get(day_name, 0) + commit_count
             
-            # Add week range info for the frontend
+            # Debug logging
+            print(f"Week: {start_of_week.strftime('%b %d')} - {end_of_week.strftime('%b %d')}")
+            print(f"Activity: {commit_days}")
+            
+            # Also return week range info for the frontend
             week_range = {
                 'start': start_of_week.strftime('%b %d'),
                 'end': end_of_week.strftime('%b %d'),
@@ -279,7 +292,9 @@ class GitHubService:
                 'activity': commit_days,
                 'week_range': week_range
             }
+            
         except Exception as e:
+            print(f"Error in get_commit_activity: {e}")
             return None
 
     def get_activity_timeline(self, username, days=30):

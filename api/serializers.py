@@ -23,6 +23,7 @@ class GitHubProfileSerializer(serializers.ModelSerializer):
     total_commits_estimate = serializers.SerializerMethodField()
     commit_summary = serializers.SerializerMethodField()
     commit_activity = serializers.SerializerMethodField()
+    commit_week_info = serializers.SerializerMethodField()
     activity_timeline = serializers.SerializerMethodField()
     
     class Meta:
@@ -32,7 +33,7 @@ class GitHubProfileSerializer(serializers.ModelSerializer):
             'company', 'blog', 'followers', 'following', 'public_repos',
             'created_at', 'repositories', 'language_stats',
             'total_stars', 'total_forks', 'total_commits_estimate',
-            'commit_summary', 'commit_activity', 'activity_timeline'  
+            'commit_summary', 'commit_activity', 'commit_week_info', 'activity_timeline'
         ]
     
     def get_total_stars(self, obj):
@@ -62,6 +63,11 @@ class GitHubProfileSerializer(serializers.ModelSerializer):
     def get_commit_activity(self, obj):
         # This will be set in the view
         return getattr(obj, '_commit_activity', None)
+    
+    def get_commit_week_info(self, obj):
+        """Get week information for commit activity"""
+        # This will be set in the view
+        return getattr(obj, '_commit_week_info', None)
     
     def get_activity_timeline(self, obj):
         # This will be set in the view
