@@ -25,6 +25,7 @@ const Dashboard = () => {
   const [comparisonLoading, setComparisonLoading] = useState(false);
   const [comparisonError, setComparisonError] = useState(null);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [weekOffset, setWeekOffset] = useState(0);
   const dashboardRef = useRef(null);
 
   const { 
@@ -39,6 +40,7 @@ const Dashboard = () => {
   const handleSearch = async (searchUsername) => {
     setUsername(searchUsername);
     setLoadingProgress(0);
+    setWeekOffset(0); // Reset week offset on new search
     
     // Simulate progress updates during fetch
     const progressInterval = setInterval(() => {
@@ -61,12 +63,30 @@ const Dashboard = () => {
     }
   };
 
+  // Fetch commit activity with week offset
+  const handleWeekChange = (offset) => {
+    setWeekOffset(offset);
+    // Refetch data with new week offset
+    // You'll need to pass this to the backend
+    // For now, we'll just log it
+    console.log('Week offset changed to:', offset);
+    
+    // If you want to refetch with the new offset, you can call:
+    // fetchData(username, { weekOffset: offset });
+    // This would require updating your useGithubData hook to accept options
+  };
+
   const combinedData = data ? {
     ...data,
     total_contributions: contributionData?.githubContributions?.totalContributions || 0,
     total_commits: contributionData?.githubContributions?.totalCommits || 0,
     activity_timeline: contributionData?.githubContributions?.dailyActivity || [],
-    data_source: contributionData?.githubContributions?.source || 'rest'
+    data_source: contributionData?.githubContributions?.source || 'rest',
+    week_range: {
+      start: weekOffset * 7,
+      end: (weekOffset + 1) * 7,
+      total_weeks: 52 // Assuming we have 52 weeks of data
+    }
   } : null;
 
   useEffect(() => {
@@ -75,10 +95,12 @@ const Dashboard = () => {
         total_contributions: combinedData.total_contributions,
         total_commits: combinedData.total_commits,
         data_source: combinedData.data_source,
-        activity_timeline_length: combinedData.activity_timeline?.length
+        activity_timeline_length: combinedData.activity_timeline?.length,
+        week_offset: weekOffset,
+        week_range: combinedData.week_range
       });
     }
-  }, [combinedData]);
+  }, [combinedData, weekOffset]);
 
   // Reset progress when data is loaded
   useEffect(() => {
@@ -200,7 +222,11 @@ const Dashboard = () => {
               }} />
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <CommitHeatmap activity={combinedData.commit_activity} />
+                <CommitHeatmap 
+                  activity={combinedData.commit_activity} 
+                  weekRange={combinedData.week_range}
+                  onWeekChange={handleWeekChange}
+                />
                 <StarHistory repositories={combinedData.repositories || []} />
               </div>
 
