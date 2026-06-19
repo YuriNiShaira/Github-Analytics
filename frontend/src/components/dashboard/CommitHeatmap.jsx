@@ -19,7 +19,6 @@ const CommitHeatmap = ({ activity, weekRange, onWeekChange }) => {
     }
   };
 
-  // Premium Glassmorphism Empty State
   if (!activity || typeof activity !== 'object') {
     return (
       <div className="bg-white/70 dark:bg-black/40 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-6 shadow-xl dark:shadow-2xl">
