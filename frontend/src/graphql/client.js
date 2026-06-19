@@ -1,7 +1,12 @@
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
 
+
+const GRAPHQL_URL = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL.replace('/api', '')}/graphql/`
+  : 'http://localhost:8000/graphql/';
+
 const client = new ApolloClient({
-  uri: 'http://localhost:8000/graphql/',
+  uri: GRAPHQL_URL,
   cache: new InMemoryCache(),
   defaultOptions: {
     watchQuery: {
