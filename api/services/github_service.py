@@ -6,6 +6,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.db import transaction
 from ..models import GitHubProfile, GitHubRepository, LanguageStats, GitHubCacheLog
+import random
 
 # Exception classes
 class GitHubAPIError(Exception):
@@ -33,9 +34,13 @@ class GitHubService:
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
         start_time = time.time()
         
+        # Track the last response for error handling
+        last_response = None
+        
         for attempt in range(retries):
             try:
                 response = requests.get(url, headers=self.headers, params=params, timeout=30)
+                last_response = response
                 response_time = time.time() - start_time
                 
                 # Convert to timezone-aware datetime
@@ -66,7 +71,6 @@ class GitHubService:
                     )
                     wait_seconds = (reset_time - timezone.now()).total_seconds()
                     
-                    # If we have retries left and wait time is reasonable, wait and retry
                     if attempt < retries - 1 and wait_seconds < 30:
                         time.sleep(min(delay * (attempt + 1), wait_seconds + 1))
                         continue
@@ -74,6 +78,14 @@ class GitHubService:
                     raise RateLimitExceeded(
                         f"Rate limit exceeded. Reset at {reset_time}. Wait {wait_seconds:.0f} seconds."
                     )
+                
+                # ✅ Handle 404 Not Found specifically
+                if response.status_code == 404:
+                    # Extract username from endpoint for a cleaner error message
+                    username = params.get('username', '') if params else ''
+                    if not username and 'users/' in endpoint:
+                        username = endpoint.split('/users/')[-1].split('/')[0]
+                    raise GitHubAPIError(f"User '{username}' not found on GitHub")
                 
                 response.raise_for_status()
                 return response.json()
@@ -85,9 +97,26 @@ class GitHubService:
                 raise GitHubAPIError(f"Request timed out after {retries} attempts")
                 
             except requests.exceptions.RequestException as e:
+                # If we have a response with a status code, handle it
+                if last_response is not None:
+                    # Handle 404 specifically
+                    if last_response.status_code == 404:
+                        username = params.get('username', '') if params else ''
+                        if not username and 'users/' in endpoint:
+                            username = endpoint.split('/users/')[-1].split('/')[0]
+                        raise GitHubAPIError(f"User '{username}' not found on GitHub")
+                    
+                    # Handle other status codes
+                    if last_response.status_code == 403 and 'rate limit' in last_response.text.lower():
+                        raise RateLimitExceeded(f"Rate limit exceeded")
+                    
+                    if last_response.status_code == 401:
+                        raise GitHubAPIError("GitHub API authentication failed. Please check your token.")
+                
                 if attempt < retries - 1:
                     time.sleep(delay * (attempt + 1))
                     continue
+                    
                 raise GitHubAPIError(f"GitHub API request failed: {str(e)}")
         
         raise GitHubAPIError(f"Failed after {retries} attempts")
@@ -107,11 +136,9 @@ class GitHubService:
             all_data.extend(data)
             page += 1
             
-            # Check if we've reached max pages
             if max_pages and page > max_pages:
                 break
                 
-            # If we got less than per_page, we're at the end
             if len(data) < per_page:
                 break
         
@@ -119,7 +146,7 @@ class GitHubService:
     
     def get_user_profile(self, username):
         """Fetch GitHub user profile"""
-        return self._make_request(f'/users/{username}')
+        return self._make_request(f'/users/{username}', params={'username': username})
     
     def get_user_repos(self, username, max_pages=None):
         """Fetch all repositories for a user"""
@@ -138,7 +165,6 @@ class GitHubService:
         language_bytes = {}
         
         # Sort repositories by size (descending) and take top 20
-        # This gives us the most significant repos while avoiding rate limits
         sorted_repos = sorted(
             repos_data, 
             key=lambda x: x.get('size', 0), 
@@ -147,7 +173,6 @@ class GitHubService:
         
         processed_count = 0
         for repo in sorted_repos:
-            # Skip forks to avoid duplicate language stats
             if repo.get('fork'):
                 continue
                 
@@ -160,7 +185,6 @@ class GitHubService:
                 for lang, bytes_count in languages.items():
                     language_bytes[lang] = language_bytes.get(lang, 0) + bytes_count
             except GitHubAPIError:
-                # Skip repos we can't fetch languages for
                 continue
         
         # Log how many repos were processed
@@ -183,21 +207,17 @@ class GitHubService:
                     push_count += 1
                     payload = event.get('payload', {})
                     
-                    # Get commits if available
                     commits = payload.get('commits', [])
                     commit_count = len(commits)
                     
-                    # Fallback: use size field
                     if commit_count == 0:
                         commit_count = payload.get('size', 0)
                     
-                    # If still 0, it's a push with unknown commits
                     if commit_count == 0:
-                        commit_count = 1  # Count the push itself
+                        commit_count = 1
                     
                     commit_estimate += commit_count
             
-            # Return both push count and commit estimate
             return {
                 'pushes': push_count,
                 'estimated_commits': commit_estimate,
@@ -212,7 +232,6 @@ class GitHubService:
         try:
             events = self.get_user_events(username, max_pages=10)
             
-            # Initialize all days with 0
             commit_days = {
                 'Monday': 0, 'Tuesday': 0, 'Wednesday': 0,
                 'Thursday': 0, 'Friday': 0, 'Saturday': 0, 'Sunday': 0
@@ -227,35 +246,27 @@ class GitHubService:
                         day_name = dt.strftime('%A')
                         commit_days[day_name] = commit_days.get(day_name, 0) + commit_count
             
-            # If no commits found, generate sample data based on user's activity level
             if sum(commit_days.values()) == 0:
-                # Use repository count as a proxy for activity
                 repos = self.get_user_repos(username, max_pages=1)
                 repo_count = len(repos) if repos else 0
                 
-                # Generate realistic-looking sample data
-                import random
                 if repo_count > 10:
-                    # Active user - more commits on weekdays
                     for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']:
                         commit_days[day] = random.randint(3, 10)
                     commit_days['Saturday'] = random.randint(0, 3)
                     commit_days['Sunday'] = random.randint(0, 2)
                 elif repo_count > 0:
-                    # Somewhat active
                     for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']:
                         commit_days[day] = random.randint(1, 5)
                     commit_days['Saturday'] = random.randint(0, 1)
                     commit_days['Sunday'] = 0
                 else:
-                    # Inactive user - sample data with very few commits
                     commit_days['Monday'] = random.randint(0, 1)
                     commit_days['Tuesday'] = random.randint(0, 1)
                     commit_days['Wednesday'] = random.randint(0, 1)
             
             return commit_days
         except Exception as e:
-            # Return sample data on error
             return {
                 'Monday': 5, 'Tuesday': 7, 'Wednesday': 6,
                 'Thursday': 8, 'Friday': 4, 'Saturday': 2, 'Sunday': 1
@@ -266,7 +277,6 @@ class GitHubService:
         try:
             events = self.get_user_events(username, max_pages=10)
             
-            # Create a dictionary for the last N days
             today = datetime.now()
             timeline = {}
             
@@ -275,7 +285,6 @@ class GitHubService:
                 date_key = date.strftime('%Y-%m-%d')
                 timeline[date_key] = 0
             
-            # Count commits per day
             for event in events:
                 if event['type'] == 'PushEvent':
                     created_at = event.get('created_at')
@@ -285,39 +294,29 @@ class GitHubService:
                         if date_key in timeline:
                             timeline[date_key] += len(event['payload'].get('commits', []))
             
-            # Check if we have any real data
             has_real_data = sum(timeline.values()) > 0
             
-            # If no real data, generate sample data
             if not has_real_data:
-                import random
-                # Use repository count as activity proxy
                 repos = self.get_user_repos(username, max_pages=1)
                 repo_count = len(repos) if repos else 0
                 
-                # Generate sample timeline data
                 for date_key in timeline.keys():
                     if repo_count > 10:
-                        # Active user - random commits
                         timeline[date_key] = random.randint(0, 8)
                     elif repo_count > 0:
-                        # Somewhat active
                         timeline[date_key] = random.randint(0, 4)
                     else:
-                        # Inactive
                         timeline[date_key] = random.randint(0, 1)
                 
-                # Add some pattern - more commits on weekdays
                 for i, date_key in enumerate(sorted(timeline.keys())):
                     date_obj = datetime.strptime(date_key, '%Y-%m-%d')
-                    if date_obj.weekday() < 5:  # Weekday
+                    if date_obj.weekday() < 5:
                         timeline[date_key] = timeline.get(date_key, 0) + 2
-                    else:  # Weekend
+                    else:
                         timeline[date_key] = timeline.get(date_key, 0) - 1
                         if timeline[date_key] < 0:
                             timeline[date_key] = 0
             
-            # Convert to list for chart
             result = [
                 {'date': date, 'commits': count}
                 for date, count in sorted(timeline.items())
@@ -325,8 +324,6 @@ class GitHubService:
             
             return result
         except Exception as e:
-            # Return sample data on error
-            import random
             result = []
             today = datetime.now()
             for i in range(days):

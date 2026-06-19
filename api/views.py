@@ -52,22 +52,23 @@ class GitHubUserAnalyticsView(APIView):
                 
         except RateLimitExceeded as e:
             return Response({
-                'error': 'Rate limit exceeded. Please wait a moment and try again.',
+                'error': str(e),
                 'retry_after': 60
             }, status=status.HTTP_429_TOO_MANY_REQUESTS)
             
         except GitHubAPIError as e:
             error_msg = str(e)
-            # Check for "Not Found" specifically
-            if 'Not Found' in error_msg or '404' in error_msg:
+            # Check for "Not Found" specifically (case-insensitive)
+            if 'not found' in error_msg.lower() or '404' in error_msg:
                 return Response({
-                    'error': f'User "{username}" not found on GitHub. Please check the username and try again.'
-                }, status=status.HTTP_404_NOT_FOUND) 
+                    'error': f'User "{username}" not found on GitHub. Please check the username (case-sensitive) and try again.'
+                }, status=status.HTTP_404_NOT_FOUND)
             return Response({
                 'error': f'GitHub API error: {error_msg}'
             }, status=status.HTTP_400_BAD_REQUEST)
             
         except BrokenPipeError:
+            # Client disconnected - return no content
             return Response({}, status=status.HTTP_204_NO_CONTENT)
             
         except Exception as e:
@@ -103,28 +104,27 @@ class GitHubUserAnalyticsView(APIView):
         # Fetch repositories
         repos_data = self.github_service.get_user_repos(username)
         
-        # Delete old repos and add new ones
-        profile.repositories.all().delete()
-        
         for repo_data in repos_data:
-            GitHubRepository.objects.create(
-                profile=profile,
+            GitHubRepository.objects.update_or_create(
                 repo_id=repo_data['id'],
-                name=repo_data['name'],
-                full_name=repo_data['full_name'],
-                description=repo_data.get('description'),
-                language=repo_data.get('language'),
-                stargazers_count=repo_data.get('stargazers_count', 0),
-                forks_count=repo_data.get('forks_count', 0),
-                watchers_count=repo_data.get('watchers_count', 0),
-                open_issues_count=repo_data.get('open_issues_count', 0),
-                size=repo_data.get('size', 0),
-                created_at=repo_data.get('created_at'),
-                updated_at=repo_data.get('updated_at'),
-                pushed_at=repo_data.get('pushed_at'),
-                is_fork=repo_data.get('fork', False),
-                is_archived=repo_data.get('archived', False),
-                html_url=repo_data.get('html_url'),
+                defaults={
+                    'profile': profile,
+                    'name': repo_data['name'],
+                    'full_name': repo_data['full_name'],
+                    'description': repo_data.get('description'),
+                    'language': repo_data.get('language'),
+                    'stargazers_count': repo_data.get('stargazers_count', 0),
+                    'forks_count': repo_data.get('forks_count', 0),
+                    'watchers_count': repo_data.get('watchers_count', 0),
+                    'open_issues_count': repo_data.get('open_issues_count', 0),
+                    'size': repo_data.get('size', 0),
+                    'created_at': repo_data.get('created_at'),
+                    'updated_at': repo_data.get('updated_at'),
+                    'pushed_at': repo_data.get('pushed_at'),
+                    'is_fork': repo_data.get('fork', False),
+                    'is_archived': repo_data.get('archived', False),
+                    'html_url': repo_data.get('html_url'),
+                }
             )
         
         # Calculate language statistics
@@ -152,6 +152,7 @@ class GitHubUserAnalyticsView(APIView):
         # Serialize and return
         serializer = GitHubProfileSerializer(profile)
         return serializer.data
+
 
 class GitHubRateLimitView(APIView):
     """Check GitHub API rate limit status"""
@@ -216,10 +217,9 @@ class GitHubCompareView(APIView):
                 
         except GitHubAPIError as e:
             error_msg = str(e)
-            # Check for "Not Found" specifically
-            if 'Not Found' in error_msg or '404' in error_msg:
+            if 'not found' in error_msg.lower() or '404' in error_msg:
                 return Response({
-                    'error': f'User "{username1}" or "{username2}" not found on GitHub. Please check the usernames and try again.'
+                    'error': f'User "{username1}" or "{username2}" not found on GitHub. Please check the usernames (case-sensitive) and try again.'
                 }, status=status.HTTP_404_NOT_FOUND)
             return Response({
                 'error': f'GitHub API error: {error_msg}'
@@ -310,16 +310,15 @@ class GitHubDebugEventsView(APIView):
                         'repo': e.get('repo', {}).get('name'),
                         'commits': len(e.get('payload', {}).get('commits', [])) if e.get('type') == 'PushEvent' else 0
                     }
-                    for e in events[:5]  # Show first 5 events for debugging
+                    for e in events[:5]
                 ]
             })
             
         except GitHubAPIError as e:
             error_msg = str(e)
-            # Check for "Not Found" specifically
-            if 'Not Found' in error_msg or '404' in error_msg:
+            if 'not found' in error_msg.lower() or '404' in error_msg:
                 return Response({
-                    'error': f'User "{username}" not found on GitHub. Please check the username and try again.'
+                    'error': f'User "{username}" not found on GitHub. Please check the username (case-sensitive) and try again.'
                 }, status=status.HTTP_404_NOT_FOUND)
             return Response({
                 'error': f'GitHub API error: {error_msg}'
