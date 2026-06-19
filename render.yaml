@@ -16,10 +16,7 @@ services:
           name: supabase-postgres
           property: connectionString
       - key: REDIS_URL
-        fromService:
-          name: github-analytics-redis
-          type: redis
-          property: connectionString
+        value: "rediss://default:gQAAAAAAARkHAAIgcDJkYTdlMjhkZWJjZmI0Njc3YmM5NzdlY2NmOTBiZTdjYw@relevant-trefrog-71943.upstash.io:6379"
       - key: SECRET_KEY
         generateValue: true
       - key: GITHUB_TOKEN
@@ -32,9 +29,3 @@ services:
         value: "https://your-frontend.vercel.app"
       - key: PYTHON_VERSION
         value: "3.10.12"
-
-  - type: redis
-    name: github-analytics-redis
-    plan: free
-    maxmemoryPolicy: allkeys-lru
-    ipAllowList: []
