@@ -28,11 +28,17 @@ IS_PRODUCTION = os.environ.get('RENDER', False)
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-# In production, use ALLOWED_HOSTS from env; otherwise allow local
 if IS_PRODUCTION:
-    ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
+    # Get host from environment or use hardcoded
+    render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME', 'github-analytics-7o5a.onrender.com')
+    ALLOWED_HOSTS = [
+        'localhost',
+        '127.0.0.1',
+        render_host,
+        'github-analytics-7o5a.onrender.com',  
+    ]
 else:
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'github-analytics-7o5a.onrender.com']
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
 # ============================================
