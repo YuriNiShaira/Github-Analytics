@@ -35,7 +35,7 @@ const ComparisonSearch = ({ onCompare, loading }) => {
               type="text"
               value={username1}
               onChange={(e) => setUsername1(e.target.value)}
-              placeholder="octocat"
+              placeholder="Username 1"
               className="w-full pl-9 pr-4 py-3 bg-white/50 dark:bg-black/20 border border-gray-200/50 dark:border-white/10 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-inner"
               disabled={loading}
             />
@@ -60,7 +60,7 @@ const ComparisonSearch = ({ onCompare, loading }) => {
               type="text"
               value={username2}
               onChange={(e) => setUsername2(e.target.value)}
-              placeholder="torvalds"
+              placeholder="Username 2"
               className="w-full pl-9 pr-4 py-3 bg-white/50 dark:bg-black/20 border border-gray-200/50 dark:border-white/10 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-inner"
               disabled={loading}
             />
