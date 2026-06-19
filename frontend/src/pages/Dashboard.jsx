@@ -235,9 +235,9 @@ const Dashboard = () => {
 
                 {/* Hero Headline */}
                 <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-tight leading-tight">
-                  Unveil Your GitHub Profile <br className="hidden sm:inline" />
+                  Your GitHub Profile <br className="hidden sm:inline" />
                   <span className="bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-500 dark:from-white dark:via-gray-200 dark:to-gray-500 bg-clip-text text-transparent">
-                    With Premium Metrics
+                    Visualized
                   </span>
                 </h2>
 
