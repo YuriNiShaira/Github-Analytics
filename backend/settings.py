@@ -32,7 +32,8 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 if IS_PRODUCTION:
     ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
 else:
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'github-analytics-7o5a.onrender.com']
+
 
 # ============================================
 # 3. INSTALLED APPS
