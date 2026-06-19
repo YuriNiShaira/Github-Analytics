@@ -40,9 +40,8 @@ const Dashboard = () => {
   const handleSearch = async (searchUsername) => {
     setUsername(searchUsername);
     setLoadingProgress(0);
-    setWeekOffset(0); // Reset week offset on new search
+    setWeekOffset(0);
     
-    // Simulate progress updates during fetch
     const progressInterval = setInterval(() => {
       setLoadingProgress(prev => {
         if (prev >= 90) {
@@ -63,18 +62,11 @@ const Dashboard = () => {
     }
   };
 
-  // Fetch commit activity with week offset
   const handleWeekChange = (offset) => {
     setWeekOffset(offset);
-    // Refetch data with new week offset
-    // You'll need to pass this to the backend
-    // For now, we'll just log it
     console.log('Week offset changed to:', offset);
-    
-    // If you want to refetch with the new offset, you can call:
-    // fetchData(username, { weekOffset: offset });
-    // This would require updating your useGithubData hook to accept options
   };
+
 
   const combinedData = data ? {
     ...data,
@@ -82,27 +74,35 @@ const Dashboard = () => {
     total_commits: contributionData?.githubContributions?.totalCommits || 0,
     activity_timeline: contributionData?.githubContributions?.dailyActivity || [],
     data_source: contributionData?.githubContributions?.source || 'rest',
-    week_range: {
-      start: weekOffset * 7,
-      end: (weekOffset + 1) * 7,
-      total_weeks: 52 // Assuming we have 52 weeks of data
-    }
+
+    commit_week_info: data.commit_week_info || null,
+
+    week_range: data.commit_week_info || null
   } : null;
 
   useEffect(() => {
+    if (data) {
+      console.log('📊 Raw data from API:', {
+        commit_activity: data.commit_activity,
+        commit_week_info: data.commit_week_info,
+        activity_timeline: data.activity_timeline?.length || 0
+      });
+    }
+  }, [data]);
+
+  useEffect(() => {
     if (combinedData) {
-      console.log('Combined Data:', {
+      console.log('📊 Combined Data:', {
         total_contributions: combinedData.total_contributions,
         total_commits: combinedData.total_commits,
         data_source: combinedData.data_source,
-        activity_timeline_length: combinedData.activity_timeline?.length,
-        week_offset: weekOffset,
-        week_range: combinedData.week_range
+        commit_activity: combinedData.commit_activity,
+        commit_week_info: combinedData.commit_week_info,
+        activity_timeline_length: combinedData.activity_timeline?.length
       });
     }
-  }, [combinedData, weekOffset]);
+  }, [combinedData]);
 
-  // Reset progress when data is loaded
   useEffect(() => {
     if (data) {
       setLoadingProgress(100);
@@ -132,17 +132,16 @@ const Dashboard = () => {
   return (
     <div className="relative min-h-screen text-gray-900 bg-gray-50 dark:text-gray-200 dark:bg-black font-sans transition-colors duration-300">
       
-      {/* --- HONEYCOMB BACKGROUND WITH DYNAMIC VIGNETTE --- */}
+      {/* Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0 honeycomb-bg opacity-100 dark:opacity-90 transition-opacity duration-300"></div>
-        {/* Soft shadow in light mode, heavy shadow in dark mode */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.05)_100%)] dark:bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.8)_100%)] transition-colors duration-300"></div>
       </div>
 
-      {/* Main Content Container */}
+      {/* Main Content */}
       <div className="relative z-10">
         
-        {/* Header - Adapts to Light/Dark Glassmorphism */}
+        {/* Header */}
         <header className="border-b border-gray-200/50 dark:border-white/5 bg-white/70 dark:bg-black/40 backdrop-blur-xl sticky top-0 z-20 transition-colors duration-300">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between flex-wrap gap-4">
@@ -165,10 +164,13 @@ const Dashboard = () => {
         </header>
 
         <main className="container mx-auto px-4 py-8">
+          
+          {/* Search Bar */}
           <section className="mb-8 relative z-30">
             <SearchBar onSearch={handleSearch} loading={loading} />
           </section>
 
+          {/* Comparison Section */}
           {showComparison && (
             <section className="mb-8 bg-white/70 dark:bg-black/60 backdrop-blur-xl p-6 rounded-2xl border border-gray-200/50 dark:border-white/5 shadow-xl dark:shadow-2xl transition-colors duration-300">
               <ComparisonSearch onCompare={handleCompare} loading={comparisonLoading} />
@@ -184,6 +186,7 @@ const Dashboard = () => {
             </section>
           )}
 
+          {/* Loading State */}
           {loading && (
             <div className="space-y-4">
               <LoadingSpinner message="Fetching data from GitHub..." />
@@ -206,8 +209,10 @@ const Dashboard = () => {
             </div>
           )}
           
+          {/* Error Message */}
           {error && <ErrorMessage message={error} onRetry={() => handleSearch(username)} />}
 
+          {/* Dashboard Data */}
           {combinedData && !loading && !error && (
             <div ref={dashboardRef} className="space-y-6">
               <ProfileCard profile={combinedData} />
@@ -222,9 +227,10 @@ const Dashboard = () => {
               }} />
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* ✅ Pass both activity and week info */}
                 <CommitHeatmap 
                   activity={combinedData.commit_activity} 
-                  weekRange={combinedData.week_range}
+                  weekRange={combinedData.commit_week_info}
                   onWeekChange={handleWeekChange}
                 />
                 <StarHistory repositories={combinedData.repositories || []} />
@@ -249,17 +255,15 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* --- LANDING STATE --- */}
+          {/* Landing State */}
           {!combinedData && !loading && !error && !showComparison && (
             <div className="py-12 md:py-20 animate-fade-in">
               <div className="max-w-4xl mx-auto text-center px-4">
                 
-                {/* Premium Gradient Pill Tag */}
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 dark:bg-white/5 border border-blue-500/20 dark:border-white/10 text-xs font-semibold text-blue-600 dark:text-blue-400 mb-6 backdrop-blur-md uppercase tracking-wider">
                   <span>✨</span> Analytics & Insights Dashboard
                 </div>
 
-                {/* Hero Headline */}
                 <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-tight leading-tight">
                   Your GitHub Profile <br className="hidden sm:inline" />
                   <span className="bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-500 dark:from-white dark:via-gray-200 dark:to-gray-500 bg-clip-text text-transparent">
@@ -267,12 +271,10 @@ const Dashboard = () => {
                   </span>
                 </h2>
 
-                {/* Description */}
                 <p className="text-base md:text-lg text-gray-600 dark:text-gray-400 max-w-xl mx-auto mb-10 font-medium">
                   Enter a GitHub username in the field above to pull full activity logs, repository language balances, and interactive contribution heatmaps.
                 </p>
 
-                {/* Animated Action Arrow pointing up towards search bar */}
                 <div className="flex flex-col items-center justify-center gap-2 mb-16 animate-bounce">
                   <svg 
                     className="w-6 h-6 text-blue-600 dark:text-gray-400" 
@@ -288,13 +290,10 @@ const Dashboard = () => {
                   </span>
                 </div>
 
-                {/* Feature Preview Mock Cards Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 relative">
-                  {/* Glow Effects Behind Cards */}
                   <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-72 h-32 bg-blue-500/10 dark:bg-blue-500/5 blur-3xl rounded-full"></div>
                   <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-72 h-32 bg-indigo-500/10 dark:bg-white/5 blur-3xl rounded-full"></div>
 
-                  {/* Card 1: Code Insights */}
                   <div className="group bg-white/60 dark:bg-black/30 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 p-6 rounded-2xl shadow-lg hover:shadow-xl dark:hover:border-white/10 transition-all duration-300 text-left flex flex-col justify-between">
                     <div>
                       <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">📊</div>
@@ -305,7 +304,6 @@ const Dashboard = () => {
                     </div>
                   </div>
 
-                  {/* Card 2: Language Distributions */}
                   <div className="group bg-white/60 dark:bg-black/30 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 p-6 rounded-2xl shadow-lg hover:shadow-xl dark:hover:border-white/10 transition-all duration-300 text-left flex flex-col justify-between">
                     <div>
                       <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">🍩</div>
@@ -316,7 +314,6 @@ const Dashboard = () => {
                     </div>
                   </div>
 
-                  {/* Card 3: Direct User Comparison */}
                   <div 
                     onClick={() => setShowComparison(true)}
                     className="group bg-white/60 dark:bg-black/30 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 p-6 rounded-2xl shadow-lg hover:shadow-xl dark:hover:border-white/10 transition-all duration-300 text-left flex flex-col justify-between cursor-pointer hover:bg-gray-50/50 dark:hover:bg-white/[0.02]"
@@ -336,6 +333,7 @@ const Dashboard = () => {
               </div>
             </div>
           )}
+          
         </main>
       </div>
     </div>
