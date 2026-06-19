@@ -15,8 +15,6 @@ services:
         fromDatabase:
           name: supabase-postgres
           property: connectionString
-      - key: REDIS_URL
-        value: "rediss://default:gQAAAAAAARkHAAIgcDJkYTdlMjhkZWJjZmI0Njc3YmM5NzdlY2NmOTBiZTdjYw@relevant-trefrog-71943.upstash.io:6379"
       - key: SECRET_KEY
         generateValue: true
       - key: GITHUB_TOKEN
