@@ -1,9 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { CalendarIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
-const CommitHeatmap = ({ activity }) => {
-  // Premium Glassmorphism Empty State (Null Data)
+const CommitHeatmap = ({ activity, weekRange, onWeekChange }) => {
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  const handlePreviousWeek = () => {
+    const newOffset = weekOffset + 1;
+    setWeekOffset(newOffset);
+    if (onWeekChange) onWeekChange(newOffset);
+  };
+
+  const handleNextWeek = () => {
+    if (weekOffset > 0) {
+      const newOffset = weekOffset - 1;
+      setWeekOffset(newOffset);
+      if (onWeekChange) onWeekChange(newOffset);
+    }
+  };
+
+  // Check if we have data
   if (!activity || typeof activity !== 'object') {
     return (
       <div className="bg-white/70 dark:bg-black/40 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-6 shadow-xl dark:shadow-2xl transition-all duration-300 h-full flex flex-col">
@@ -26,7 +42,6 @@ const CommitHeatmap = ({ activity }) => {
 
   const totalContributions = data.reduce((sum, d) => sum + d.commits, 0);
   
-  // Premium Glassmorphism Empty State (Zero Commits)
   if (totalContributions === 0) {
     return (
       <div className="bg-white/70 dark:bg-black/40 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-6 shadow-xl dark:shadow-2xl transition-all duration-300 h-full flex flex-col">
@@ -35,7 +50,7 @@ const CommitHeatmap = ({ activity }) => {
           <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-wide">Contribution Activity</h3>
         </div>
         <div className="flex-1 flex items-center justify-center py-10">
-          <p className="text-gray-500 dark:text-gray-400">No contribution activity found for this user</p>
+          <p className="text-gray-500 dark:text-gray-400">No activity for this week</p>
         </div>
       </div>
     );
@@ -43,20 +58,17 @@ const CommitHeatmap = ({ activity }) => {
 
   const maxContributions = Math.max(...data.map(d => d.commits));
 
-  // Opacity-based colors allow the honeycomb background to shine through!
   const getBarColor = (value) => {
-    if (value === 0) return 'rgba(148, 163, 184, 0.05)'; // Nearly invisible for zero
+    if (value === 0) return 'rgba(148, 163, 184, 0.05)';
     const ratio = value / maxContributions;
-    if (ratio > 0.7) return 'rgba(37, 99, 235, 1)';   // Solid Blue-600
-    if (ratio > 0.4) return 'rgba(59, 130, 246, 0.8)'; // Semi-transparent Blue-500
-    if (ratio > 0.1) return 'rgba(96, 165, 250, 0.5)'; // Transparent Blue-400
-    return 'rgba(147, 197, 253, 0.25)';                // Very transparent Blue-300
+    if (ratio > 0.7) return 'rgba(37, 99, 235, 1)';
+    if (ratio > 0.4) return 'rgba(59, 130, 246, 0.8)';
+    if (ratio > 0.1) return 'rgba(96, 165, 250, 0.5)';
+    return 'rgba(147, 197, 253, 0.25)';
   };
 
-  // Find most active day
   const mostActiveDay = data.reduce((a, b) => a.commits > b.commits ? a : b);
 
-  // Glassmorphism Tooltip
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       return (
@@ -74,6 +86,11 @@ const CommitHeatmap = ({ activity }) => {
     return null;
   };
 
+  // Format week range display
+  const weekLabel = weekRange 
+    ? `${weekRange.start} - ${weekRange.end}, ${weekRange.year}`
+    : weekOffset === 0 ? 'This Week' : `${weekOffset} week${weekOffset > 1 ? 's' : ''} ago`;
+
   return (
     <div className="bg-white/70 dark:bg-black/40 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 rounded-2xl p-6 shadow-xl dark:shadow-2xl transition-all duration-300">
       
@@ -83,15 +100,33 @@ const CommitHeatmap = ({ activity }) => {
           <CalendarIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
           <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-wide">Contribution Activity</h3>
         </div>
-        <div className="text-left sm:text-right">
-          <span className="inline-block bg-gray-100/50 dark:bg-white/5 border border-gray-200/50 dark:border-white/5 rounded-lg px-3 py-1 text-gray-700 dark:text-gray-300 text-sm font-semibold">
-            Total: {totalContributions}
+        
+        {/* Week Navigation */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handlePreviousWeek}
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+            aria-label="Previous week"
+          >
+            <ChevronLeftIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+          </button>
+          
+          <span className="text-xs font-medium text-gray-600 dark:text-gray-300 min-w-[120px] text-center">
+            {weekLabel}
           </span>
-          {mostActiveDay && mostActiveDay.commits > 0 && (
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 font-medium">
-              Peak: {mostActiveDay.fullDay} ({mostActiveDay.commits})
-            </div>
-          )}
+          
+          <button
+            onClick={handleNextWeek}
+            disabled={weekOffset === 0}
+            className={`p-1.5 rounded-lg transition-colors ${
+              weekOffset === 0 
+                ? 'opacity-30 cursor-not-allowed' 
+                : 'hover:bg-gray-100 dark:hover:bg-white/5'
+            }`}
+            aria-label="Next week"
+          >
+            <ChevronRightIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+          </button>
         </div>
       </div>
       
@@ -144,10 +179,9 @@ const CommitHeatmap = ({ activity }) => {
         <span>More</span>
       </div>
 
-      {/* Footer Info */}
       <div className="mt-5 pt-4 border-t border-gray-200/50 dark:border-white/5">
         <p className="text-gray-400 dark:text-gray-500 text-xs text-center">
-          Includes commits, issues, PRs, and reviews by day of week.
+          {weekOffset === 0 ? 'Current week activity' : `Week of ${weekLabel}`}
         </p>
       </div>
     </div>
