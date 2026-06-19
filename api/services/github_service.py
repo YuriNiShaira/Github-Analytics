@@ -227,50 +227,60 @@ class GitHubService:
         except Exception as e:
             return None
         
-    def get_commit_activity(self, username):
-        """Get commit activity by day of week with fallback"""
+    def get_commit_activity(self, username, week_offset=0):
+        """Get commit activity for a specific week (0 = current week, 1 = last week, etc.)"""
         try:
             events = self.get_user_events(username, max_pages=10)
             
+            from datetime import datetime, timedelta
+            today = datetime.now()
+            
+            # Calculate the start of the target week (Monday)
+            # Get to Monday of current week
+            days_since_monday = today.weekday()  # Monday=0, Sunday=6
+            start_of_week = today - timedelta(days=days_since_monday)
+            
+            # Apply week offset
+            start_of_week = start_of_week - timedelta(weeks=week_offset)
+            
+            # End of week (Sunday)
+            end_of_week = start_of_week + timedelta(days=6)
+            
+            # Initialize all days with 0
             commit_days = {
                 'Monday': 0, 'Tuesday': 0, 'Wednesday': 0,
                 'Thursday': 0, 'Friday': 0, 'Saturday': 0, 'Sunday': 0
             }
             
+            day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+            
             for event in events:
                 if event['type'] == 'PushEvent':
-                    commit_count = len(event['payload'].get('commits', []))
                     created_at = event.get('created_at')
                     if created_at:
                         dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-                        day_name = dt.strftime('%A')
-                        commit_days[day_name] = commit_days.get(day_name, 0) + commit_count
+                        if start_of_week <= dt <= end_of_week:
+                            commit_count = len(event['payload'].get('commits', []))
+                            if commit_count == 0:
+                                commit_count = event['payload'].get('size', 0)
+                            if commit_count == 0:
+                                commit_count = 1
+                            day_name = dt.strftime('%A')
+                            commit_days[day_name] = commit_days.get(day_name, 0) + commit_count
             
-            if sum(commit_days.values()) == 0:
-                repos = self.get_user_repos(username, max_pages=1)
-                repo_count = len(repos) if repos else 0
-                
-                if repo_count > 10:
-                    for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']:
-                        commit_days[day] = random.randint(3, 10)
-                    commit_days['Saturday'] = random.randint(0, 3)
-                    commit_days['Sunday'] = random.randint(0, 2)
-                elif repo_count > 0:
-                    for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']:
-                        commit_days[day] = random.randint(1, 5)
-                    commit_days['Saturday'] = random.randint(0, 1)
-                    commit_days['Sunday'] = 0
-                else:
-                    commit_days['Monday'] = random.randint(0, 1)
-                    commit_days['Tuesday'] = random.randint(0, 1)
-                    commit_days['Wednesday'] = random.randint(0, 1)
-            
-            return commit_days
-        except Exception as e:
-            return {
-                'Monday': 5, 'Tuesday': 7, 'Wednesday': 6,
-                'Thursday': 8, 'Friday': 4, 'Saturday': 2, 'Sunday': 1
+            # Add week range info for the frontend
+            week_range = {
+                'start': start_of_week.strftime('%b %d'),
+                'end': end_of_week.strftime('%b %d'),
+                'year': start_of_week.strftime('%Y')
             }
+            
+            return {
+                'activity': commit_days,
+                'week_range': week_range
+            }
+        except Exception as e:
+            return None
 
     def get_activity_timeline(self, username, days=30):
         """Get commit activity timeline with fallback"""

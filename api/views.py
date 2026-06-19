@@ -141,7 +141,7 @@ class GitHubUserAnalyticsView(APIView):
         
         # Get commit data
         commit_data = self.github_service.estimate_total_commits(username)
-        commit_activity = self.github_service.get_commit_activity(username)
+        commit_activity = self.github_service.get_commit_activity(username, week_offset=0)
         activity_timeline = self.github_service.get_activity_timeline(username)
         
         # Attach data to profile object
