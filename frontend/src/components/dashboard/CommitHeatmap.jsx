@@ -5,7 +5,7 @@ import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/reac
 const CommitHeatmap = ({ data, source = 'rest' }) => {
   const [weekOffset, setWeekOffset] = useState(0);
 
-  // ✅ Get current week's data from the timeline
+  // ✅ Get current week's data from the timeline (Sunday - Saturday)
   const currentWeekData = useMemo(() => {
     if (!data || !Array.isArray(data) || data.length === 0) {
       return [];
@@ -14,13 +14,12 @@ const CommitHeatmap = ({ data, source = 'rest' }) => {
     // Get today's date
     const today = new Date();
     
-    // Calculate start of current week (Monday)
+    // Calculate start of current week (Sunday)
     const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - daysToMonday - (weekOffset * 7));
+    startOfWeek.setDate(today.getDate() - dayOfWeek - (weekOffset * 7));
     
-    // End of week (Sunday)
+    // End of week (Saturday)
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
 
@@ -36,17 +35,17 @@ const CommitHeatmap = ({ data, source = 'rest' }) => {
     // Sort by date
     weekData.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    // Map day of week to data
+    // Map day of week to data (Sunday first)
     const dayMap = {
-      'Monday': 0, 'Tuesday': 0, 'Wednesday': 0,
-      'Thursday': 0, 'Friday': 0, 'Saturday': 0, 'Sunday': 0
+      'Sunday': 0, 'Monday': 0, 'Tuesday': 0,
+      'Wednesday': 0, 'Thursday': 0, 'Friday': 0, 'Saturday': 0
     };
 
-    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     
     weekData.forEach(item => {
       const date = new Date(item.date);
-      const dayName = dayNames[date.getDay() === 0 ? 6 : date.getDay() - 1];
+      const dayName = dayNames[date.getDay()];
       dayMap[dayName] = (dayMap[dayName] || 0) + item.commits;
     });
 
@@ -57,9 +56,8 @@ const CommitHeatmap = ({ data, source = 'rest' }) => {
   const getWeekRange = () => {
     const today = new Date();
     const dayOfWeek = today.getDay();
-    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - daysToMonday - (weekOffset * 7));
+    startOfWeek.setDate(today.getDate() - dayOfWeek - (weekOffset * 7));
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     
@@ -81,8 +79,8 @@ const CommitHeatmap = ({ data, source = 'rest' }) => {
     fullDay: day
   }));
 
-  // Sort days in correct order
-  const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  // Sort days in correct order (Sunday first)
+  const dayOrder = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const sortedData = [...chartData].sort((a, b) => dayOrder.indexOf(a.fullDay) - dayOrder.indexOf(b.fullDay));
 
   // Handle empty state
