@@ -227,11 +227,9 @@ const Dashboard = () => {
               }} />
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* ✅ Pass both activity and week info */}
                 <CommitHeatmap 
-                  activity={combinedData.commit_activity} 
-                  weekRange={combinedData.commit_week_info}
-                  onWeekChange={handleWeekChange}
+                  data={combinedData.activity_timeline} 
+                  source={combinedData.data_source}
                 />
                 <StarHistory repositories={combinedData.repositories || []} />
               </div>
