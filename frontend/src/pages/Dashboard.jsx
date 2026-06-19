@@ -125,7 +125,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between flex-wrap gap-4">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3 tracking-wide transition-colors duration-300">
                 <span className="bg-blue-600 dark:bg-white/80 w-2 h-8 rounded-full transition-colors duration-300"></span>
-                GitHub Analytics
+                GitInsight
               </h1>
               <div className="flex items-center gap-3">
                 <button
