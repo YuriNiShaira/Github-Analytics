@@ -223,23 +223,90 @@ const Dashboard = () => {
             </div>
           )}
 
+          {/* --- LANDING STATE --- */}
           {!combinedData && !loading && !error && !showComparison && (
-            <div className="text-center py-20">
-              <div className="max-w-md mx-auto bg-white/80 dark:bg-[#0a0a0a]/80 border border-gray-200/50 dark:border-white/5 backdrop-blur-xl p-8 rounded-3xl shadow-xl dark:shadow-2xl transition-colors duration-300">
-                <div className="text-5xl mb-6 opacity-80 dark:opacity-70">📊</div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 tracking-wide transition-colors duration-300">
-                  Dashboard Ready
+            <div className="py-12 md:py-20 animate-fade-in">
+              <div className="max-w-4xl mx-auto text-center px-4">
+                
+                {/* Premium Gradient Pill Tag */}
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 dark:bg-white/5 border border-blue-500/20 dark:border-white/10 text-xs font-semibold text-blue-600 dark:text-blue-400 mb-6 backdrop-blur-md uppercase tracking-wider">
+                  <span>✨</span> Analytics & Insights Dashboard
+                </div>
+
+                {/* Hero Headline */}
+                <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4 tracking-tight leading-tight">
+                  Unveil Your GitHub Profile <br className="hidden sm:inline" />
+                  <span className="bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-500 dark:from-white dark:via-gray-200 dark:to-gray-500 bg-clip-text text-transparent">
+                    With Premium Metrics
+                  </span>
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400 transition-colors duration-300">
-                  Enter a GitHub username above to view their coding activity,
-                  language statistics, and repository insights.
+
+                {/* Description */}
+                <p className="text-base md:text-lg text-gray-600 dark:text-gray-400 max-w-xl mx-auto mb-10 font-medium">
+                  Enter a GitHub username in the field above to pull full activity logs, repository language balances, and interactive contribution heatmaps.
                 </p>
-                <button
-                  onClick={() => setShowComparison(true)}
-                  className="mt-8 text-sm text-blue-600 dark:text-gray-400 hover:text-blue-800 dark:hover:text-white transition-colors font-medium tracking-wide uppercase"
-                >
-                  Compare Users Instead →
-                </button>
+
+                {/* Animated Action Arrow pointing up towards search bar */}
+                <div className="flex flex-col items-center justify-center gap-2 mb-16 animate-bounce">
+                  <svg 
+                    className="w-6 h-6 text-blue-600 dark:text-gray-400" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2.5" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
+                  </svg>
+                  <span className="text-xs font-bold text-blue-600 dark:text-gray-500 tracking-widest uppercase">
+                    Type a username above
+                  </span>
+                </div>
+
+                {/* Feature Preview Mock Cards Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 relative">
+                  {/* Glow Effects Behind Cards */}
+                  <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-72 h-32 bg-blue-500/10 dark:bg-blue-500/5 blur-3xl rounded-full"></div>
+                  <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-72 h-32 bg-indigo-500/10 dark:bg-white/5 blur-3xl rounded-full"></div>
+
+                  {/* Card 1: Code Insights */}
+                  <div className="group bg-white/60 dark:bg-black/30 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 p-6 rounded-2xl shadow-lg hover:shadow-xl dark:hover:border-white/10 transition-all duration-300 text-left flex flex-col justify-between">
+                    <div>
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">📊</div>
+                      <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-1.5">Deep Analytics</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                        Track multi-dimensional stats including total stars, forks, and total production-ready repositories.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Language Distributions */}
+                  <div className="group bg-white/60 dark:bg-black/30 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 p-6 rounded-2xl shadow-lg hover:shadow-xl dark:hover:border-white/10 transition-all duration-300 text-left flex flex-col justify-between">
+                    <div>
+                      <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">🍩</div>
+                      <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-1.5">Language Gaps</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                        Visualize exact byte breakdowns and layout ratios across all active codebases on a sleek donut chart.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Card 3: Direct User Comparison */}
+                  <div 
+                    onClick={() => setShowComparison(true)}
+                    className="group bg-white/60 dark:bg-black/30 backdrop-blur-xl border border-gray-200/50 dark:border-white/5 p-6 rounded-2xl shadow-lg hover:shadow-xl dark:hover:border-white/10 transition-all duration-300 text-left flex flex-col justify-between cursor-pointer hover:bg-gray-50/50 dark:hover:bg-white/[0.02]"
+                  >
+                    <div>
+                      <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">⚔️</div>
+                      <h4 className="text-sm font-bold text-gray-900 dark:text-white flex items-center justify-between mb-1.5">
+                        User Matchups <span className="text-xs text-blue-600 dark:text-blue-400 group-hover:translate-x-1 transition-transform">→</span>
+                      </h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                        Want to see how two profiles match up? Click here to run clean, side-by-side metric evaluations.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
           )}
