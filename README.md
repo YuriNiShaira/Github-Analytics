@@ -4,14 +4,18 @@ A full-featured GitHub Analytics Dashboard that visualizes developer activity, c
 
 ## ✨ Features
 
-- **Activity Timeline** - View daily contribution patterns
-- **Commit Heatmap** - Weekly activity breakdown
-- **Language Distribution** - Interactive pie charts
-- **Repository Browser** - Search, filter, and sort repos
-- **User Comparison** - Side-by-side developer benchmarking
-- **Export to PDF** - Generate analytics reports
-- **Dark/Light Mode** - Toggle themes
-- **Accurate Contributions** - GraphQL-powered commit tracking
+- **Activity Timeline** – View daily contribution patterns
+- **Commit Heatmap** – Weekly activity breakdown
+- **Language Distribution** – Interactive pie charts
+- **Repository Browser** – Search, filter, and sort repos
+- **User Comparison** – Side-by-side developer benchmarking
+- **Export to PDF** – Generate analytics reports
+- **Dark/Light Mode** – Toggle themes
+- **Accurate Contributions** – GraphQL-powered commit tracking
+
+## 🔒 Privacy First – No Data Collection
+
+Your data stays yours. GitInsight only fetches public GitHub data and stores nothing beyond your session. No tracking, no analytics, no ads – just insights.
 
 ## 🚀 Live Demo
 
@@ -19,20 +23,10 @@ A full-featured GitHub Analytics Dashboard that visualizes developer activity, c
 
 ## 🛠️ Tech Stack
 
-### Backend
-- Django REST Framework
-- GraphQL (Graphene)
-- PostgreSQL (Supabase)
-- Redis (Upstash)
-- GitHub API
+- **Backend**: Django REST Framework, GraphQL (Graphene), PostgreSQL (Supabase), Redis (Upstash), GitHub API
+- **Frontend**: React (Vite), Tailwind CSS, Recharts, Apollo Client
 
-### Frontend
-- React (Vite)
-- Tailwind CSS
-- Recharts
-- Apollo Client
-
-## 📦 Installation
+## 📦 Quick Start
 
 ```bash
 # Clone the repository
@@ -44,7 +38,7 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env
-# Edit .env with your credentials (GitHub token, database URL, etc.)
+# Edit .env with your credentials
 python manage.py migrate
 python manage.py runserver
 
@@ -52,6 +46,3 @@ python manage.py runserver
 cd frontend
 npm install
 npm run dev
-
-# Redis (optional)
-docker run -d -p 6379:6379 --name redis redis:alpine
