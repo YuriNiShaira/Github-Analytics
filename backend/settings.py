@@ -174,6 +174,7 @@ if IS_PRODUCTION:
     CORS_ALLOWED_ORIGINS = [
         'https://github-analytics-7dkv.vercel.app',
         'https://github-analytics-7o5a.onrender.com',
+        'https://gitinsight-analytics.vercel.app/',
     ]
 else:
     CORS_ALLOWED_ORIGINS = ['http://localhost:3000']
