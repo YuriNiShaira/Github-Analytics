@@ -34,7 +34,24 @@ A full-featured GitHub Analytics Dashboard that visualizes developer activity, c
 
 ## 📦 Installation
 
-### 1. Clone the repository
 ```bash
+# Clone the repository
 git clone https://github.com/YuriNiShaira/Github-Analytics.git
 cd Github-Analytics
+
+# Backend setup
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env
+# Edit .env with your credentials (GitHub token, database URL, etc.)
+python manage.py migrate
+python manage.py runserver
+
+# Frontend setup (in a new terminal)
+cd frontend
+npm install
+npm run dev
+
+# Redis (optional)
+docker run -d -p 6379:6379 --name redis redis:alpine
